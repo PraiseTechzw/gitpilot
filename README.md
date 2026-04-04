@@ -81,6 +81,8 @@ git tag pkg-v1.0.0
 git push origin pkg-v1.0.0
 ```
 
+If publish fails with permission errors, add a repository secret named `GH_PACKAGES_TOKEN` (classic PAT) with `write:packages` and `read:packages` scopes, then push a new `pkg-v*` tag.
+
 Install from GitHub Packages:
 
 ```bash

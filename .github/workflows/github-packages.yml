@@ -34,7 +34,9 @@ jobs:
 
       - name: Publish package to GitHub Packages
         env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
+          TOKEN="${GH_PACKAGES_TOKEN:-$NODE_AUTH_TOKEN}"
+          npm config set //npm.pkg.github.com/:_authToken "$TOKEN"
           npm publish --registry=https://npm.pkg.github.com --access public
