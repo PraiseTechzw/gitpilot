@@ -70,6 +70,23 @@ To publish a new version after bumping `version` in [package.json](package.json)
 npm run publish
 ```
 
+### GitHub Packages
+
+This repository can also publish to GitHub Packages using the workflow in [.github/workflows/github-packages.yml](.github/workflows/github-packages.yml).
+
+Trigger it with a tag:
+
+```bash
+git tag pkg-v1.0.0
+git push origin pkg-v1.0.0
+```
+
+Install from GitHub Packages:
+
+```bash
+npm install -g @praisetechzw/gitpilot --registry=https://npm.pkg.github.com
+```
+
 ### What you need
 
 - VS Code 1.74 or newer
