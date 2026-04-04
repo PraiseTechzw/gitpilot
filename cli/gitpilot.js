@@ -81,7 +81,7 @@ async function pushCommand({ style = 'conventional' }) {
   if (gitOps.hasChanges(repoRoot)) {
     await commitCommand({ yes: true, style });
   }
-  await gitOps.push(repoRoot);
+  gitOps.pushInteractive(repoRoot);
   console.log(styles.green('Pushed to remote.'));
 }
 

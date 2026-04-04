@@ -20,6 +20,8 @@ function activate(context) {
   repoRoot = detectRepoRoot();
   if (!repoRoot) {
     log('No git repository found in workspace yet. UI will stay available.');
+  } else {
+    checkCredentials();
   }
 
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -413,6 +415,36 @@ function toast(message, isError = false) {
 function log(message, isError = false) {
   const time = new Date().toISOString().slice(11, 19);
   outputChannel?.appendLine(`[${time}] ${isError ? 'ERROR: ' : ''}${message}`);
+}
+
+async function checkCredentials() {
+  if (!repoRoot) return;
+
+  const remoteUrl = gitOps.getRemoteUrl(repoRoot);
+  if (!remoteUrl || !remoteUrl.startsWith('https://')) return;
+
+  const helper = gitOps.getCredentialHelper(repoRoot);
+  if (!helper) {
+    const response = await vscode.window.showWarningMessage(
+      'GitPilot detected you are using HTTPS but no credential helper is configured. Auto-push will fail unless credentials are saved.',
+      'How to fix?',
+      'Ignore',
+    );
+
+    if (response === 'How to fix?') {
+      const fix = await vscode.window.showInformationMessage(
+        'The recommended fix is to use SSH, or configure a credential helper locally with:\ngit config --global credential.helper cache',
+        'Copy command',
+        'Open Git Docs',
+      );
+
+      if (fix === 'Copy command') {
+        vscode.env.clipboard.writeText('git config --global credential.helper cache');
+      } else if (fix === 'Open Git Docs') {
+        vscode.env.openExternal(vscode.Uri.parse('https://git-scm.com/docs/git-credential-cache'));
+      }
+    }
+  }
 }
 
 module.exports = {
