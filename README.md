@@ -1,51 +1,74 @@
-# 🚀 GitPilot — Auto Git for VS Code
+<p align="center">
+  <img src="icon.svg" alt="GitPilot logo" width="128" height="128" />
+</p>
 
-Never write a commit message again. GitPilot automates your entire Git workflow directly inside VS Code — with smart commit messages, auto-commit on save, auto-push, and a full CLI.
+# GitPilot
+
+[GitHub](https://github.com/PraiseTechzw/gitpilot) · [npm profile](https://www.npmjs.com/~praisetechzw)
+
+GitPilot automates Git inside VS Code with smart commit messages, auto-commit on save, auto-push, a sidebar workflow, and a CLI for terminal use.
 
 ---
 
-## ✨ Features
+## Features
 
 | Feature | Description |
 |---|---|
-| **Smart commit messages** | Analyses your diff and generates conventional, emoji, or plain messages automatically |
+| **Smart commit messages** | Analyzes your diff and generates conventional, emoji, or plain messages automatically |
 | **Auto-commit on save** | Watches for file changes and commits after a configurable period of inactivity |
 | **Auto-push** | Optionally push to remote after every commit |
-| **Beautiful sidebar** | Real-time view of changes, branch, recent commits, ahead/behind status |
+| **Sidebar panel** | Real-time view of changes, branch, recent commits, and ahead/behind status |
 | **Diff preview** | See exactly which files changed and how many lines before committing |
 | **CLI tool** | Full `gitpilot` CLI for terminal power users |
 | **Undo last commit** | One-click soft reset |
-| **Keyboard shortcuts** | `Ctrl+Alt+C` to commit, `Ctrl+Alt+P` to commit & push |
+| **Keyboard shortcuts** | `Ctrl+Alt+C` to commit, `Ctrl+Alt+P` to commit and push |
 
 ---
 
-## 🚀 Getting Started
+## Install
 
-### Install the extension
+### From VS Code
 
 1. Open VS Code
 2. Go to Extensions (`Ctrl+Shift+X`)
 3. Search for **GitPilot**
 4. Click Install
 
-Or install from source:
+### From a VSIX file
+
+If you build the extension locally, install the generated `.vsix` file with:
+
+```bash
+code --install-extension gitpilot-1.0.0.vsix
+```
+
+### From source
 ```bash
 git clone <this-repo>
 cd gitpilot
 npm install
-# Press F5 in VS Code to launch Extension Development Host
+npm run package
+# Press F5 in VS Code to launch the Extension Development Host
 ```
 
-### Install the CLI
+### CLI
 
 ```bash
 cd gitpilot
-npm link   # Makes `gitpilot` available globally
+npm link
 ```
+
+### What you need
+
+- VS Code 1.74 or newer
+- Git installed and available on your `PATH`
+- A folder opened in VS Code that is already a git repository
 
 ---
 
-## 🎛 Sidebar Panel
+## Usage
+
+### VS Code panel
 
 Click the GitPilot icon in the Activity Bar (left sidebar) to open the panel.
 
@@ -57,9 +80,21 @@ The panel shows:
 - **Commit message** — pre-filled from your diff, fully editable
 - **Recent commits** — click any to copy the hash
 
+### CLI commands
+
+Supported commands:
+
+```bash
+gitpilot commit [-y] [-m "message"] [-s conventional|simple|emoji]
+gitpilot push [-s conventional|simple|emoji]
+gitpilot status
+gitpilot log [n]
+gitpilot undo
+```
+
 ---
 
-## ⚙️ Settings
+## Settings
 
 Open `Settings > Extensions > GitPilot` or add to your `settings.json`:
 
@@ -78,14 +113,14 @@ Open `Settings > Extensions > GitPilot` or add to your `settings.json`:
 | `autoCommit` | `false` | Commit automatically after inactivity |
 | `autoPush` | `false` | Push after every commit |
 | `debounceSeconds` | `30` | Seconds of inactivity before auto-commit |
-| `commitStyle` | `conventional` | `conventional` / `simple` / `emoji` |
+| `commitStyle` | `conventional` | `conventional`, `simple`, or `emoji` |
 | `excludePatterns` | `[...]` | Files to ignore |
 
 ---
 
-## 💬 Commit Message Styles
+## Commit Message Styles
 
-GitPilot generates commit messages by analysing your diff:
+GitPilot generates commit messages by analyzing your diff:
 
 | Style | Example |
 |---|---|
@@ -109,26 +144,7 @@ It detects the commit **type** automatically:
 
 ---
 
-## 🖥 CLI Reference
-
-```bash
-gitpilot commit                     # Smart commit with auto-generated message
-gitpilot commit -y                  # Skip confirmation prompt
-gitpilot commit -m "my message"     # Use a custom message
-gitpilot commit -s emoji            # Use emoji style
-
-gitpilot push                       # Commit + push to remote
-
-gitpilot status                     # Branch, changes, ahead/behind
-gitpilot log                        # Last 10 commits (pretty)
-gitpilot log 20                     # Last 20 commits
-
-gitpilot undo                       # Undo last commit (soft reset)
-```
-
----
-
-## ⌨️ Keyboard Shortcuts
+## Keyboard Shortcuts
 
 | Shortcut | Action |
 |---|---|
@@ -137,11 +153,13 @@ gitpilot undo                       # Undo last commit (soft reset)
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 gitpilot/
 ├── package.json           # Extension manifest + dependencies
+├── LICENSE
+├── README.md
 ├── src/
 │   ├── extension.js       # Main VS Code extension entry point
 │   ├── git/
@@ -152,21 +170,17 @@ gitpilot/
 ├── cli/
 │   └── gitpilot.js        # Standalone CLI tool
 ├── gitpilot_architecture.svg
-└── README.md
+└── package-lock.json
 ```
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-PRs welcome! Key areas to improve:
-- AI-powered commit messages (plug in your Anthropic API key)
-- Per-branch configuration
-- Commit templates
-- GitHub/GitLab PR creation
+PRs are welcome. Good next steps include AI-assisted commit messages, per-branch configuration, commit templates, and GitHub or GitLab PR creation.
 
 ---
 
-## 📄 License
+## License
 
 MIT

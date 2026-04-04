@@ -1,0 +1,29 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="96" y1="64" x2="416" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1220"/>
+      <stop offset="1" stop-color="#0F3D3E"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="156" y1="120" x2="360" y2="392" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4ADE80"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <filter id="shadow" x="92" y="88" width="328" height="360" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="264" r="122" fill="#06111A" filter="url(#shadow)" opacity="0.45"/>
+  <path d="M158 194C158 157.549 187.549 128 224 128H288C324.451 128 354 157.549 354 194V318C354 354.451 324.451 384 288 384H224C187.549 384 158 354.451 158 318V194Z" fill="#0A1624" stroke="url(#accent)" stroke-width="10"/>
+  <path d="M186 212C186 202.059 194.059 194 204 194H308C317.941 194 326 202.059 326 212V230C326 239.941 317.941 248 308 248H204C194.059 248 186 239.941 186 230V212Z" fill="#11253A"/>
+  <path d="M186 268C186 258.059 194.059 250 204 250H308C317.941 250 326 258.059 326 268V286C326 295.941 317.941 304 308 304H204C194.059 304 186 295.941 186 286V268Z" fill="#11253A"/>
+  <circle cx="214" cy="221" r="8" fill="#4ADE80"/>
+  <circle cx="214" cy="277" r="8" fill="#22D3EE"/>
+  <path d="M244 220H292" stroke="#E8F1FF" stroke-width="12" stroke-linecap="round"/>
+  <path d="M244 276H280" stroke="#E8F1FF" stroke-width="12" stroke-linecap="round"/>
+  <path d="M218 344L274 288L330 344" stroke="url(#accent)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M304 332L330 344L318 318" stroke="url(#accent)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M212 176L178 144" stroke="#8AA3B8" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="168" cy="134" r="12" fill="#4ADE80"/>
+  <circle cx="350" cy="138" r="12" fill="#22D3EE"/>
+</svg>

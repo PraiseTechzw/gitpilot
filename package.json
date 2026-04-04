@@ -3,11 +3,32 @@
   "displayName": "GitPilot — Auto Git",
   "description": "Automate your entire Git workflow: smart commit messages, auto-commit on save, auto-push, and a full CLI.",
   "version": "1.0.0",
-  "publisher": "your-publisher-name",
+  "publisher": "praisetechzw",
   "engines": { "vscode": "^1.74.0" },
   "categories": ["Other", "SCM Providers"],
-  "icon": "icon.png",
   "keywords": ["git", "auto-commit", "auto-push", "commit message", "automation"],
+  "author": {
+    "name": "PraiseTechzw",
+    "url": "https://www.npmjs.com/~praisetechzw"
+  },
+  "icon": "icon.svg",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PraiseTechzw/gitpilot.git"
+  },
+  "homepage": "https://github.com/PraiseTechzw/gitpilot#readme",
+  "bugs": {
+    "url": "https://github.com/PraiseTechzw/gitpilot/issues"
+  },
+  "files": [
+    "src/**",
+    "cli/**",
+    "README.md",
+    "LICENSE*",
+    "gitpilot_architecture.svg",
+    "icon.svg"
+  ],
   "activationEvents": ["onStartupFinished"],
   "main": "./src/extension.js",
   "bin": {
