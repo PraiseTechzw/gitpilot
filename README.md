@@ -181,6 +181,24 @@ PRs are welcome. Good next steps include AI-assisted commit messages, per-branch
 
 ---
 
+## CI/CD
+
+GitHub Actions are set up for two paths:
+
+1. CI runs on push and pull requests to validate the code with install, lint, and package checks.
+2. Release workflow runs when you push a tag like `v1.0.1` and produces a VSIX artifact and GitHub Release.
+
+Release commands:
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+If you add a `VSCE_PAT` secret in GitHub Actions, the release workflow can also publish to the Visual Studio Marketplace.
+
+---
+
 ## License
 
 MIT
