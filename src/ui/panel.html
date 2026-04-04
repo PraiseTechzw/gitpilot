@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';"/>
+<style>
+  :root {
+    --bg: var(--vscode-sideBar-background, #1e1e1e);
+    --fg: var(--vscode-foreground, #cccccc);
+    --fg2: var(--vscode-descriptionForeground, #999);
+    --accent: var(--vscode-button-background, #0e639c);
+    --accent-fg: var(--vscode-button-foreground, #fff);
+    --border: var(--vscode-panel-border, #333);
+    --input-bg: var(--vscode-input-background, #2a2a2a);
+    --badge-bg: var(--vscode-badge-background, #4d4d4d);
+    --success: #4ec9b0;
+    --warn: #ce9178;
+    --danger: #f44747;
+    --radius: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--fg);
+    padding: 12px;
+    user-select: none;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-icon { font-size: 18px; }
+  .header-title { font-size: 14px; font-weight: 600; }
+  .header-branch {
+    margin-left: auto;
+    background: var(--badge-bg);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    color: var(--fg2);
+  }
+
+  /* ── Status card ── */
+  .status-card {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .status-row:last-child { margin-bottom: 0; }
+  .status-label { color: var(--fg2); font-size: 12px; }
+  .status-value { font-weight: 500; font-size: 12px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+  .dot-green { background: var(--success); }
+  .dot-orange { background: var(--warn); }
+  .dot-gray { background: #666; }
+  .pill {
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+  .pill-ahead { background: #264f3e; color: var(--success); }
+  .pill-behind { background: #3e2626; color: var(--danger); }
+
+  /* ── Toggle switches ── */
+  .section { margin-bottom: 14px; }
+  .section-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    color: var(--fg2);
+    margin-bottom: 8px;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-info { flex: 1; }
+  .toggle-name { font-size: 13px; }
+  .toggle-desc { font-size: 11px; color: var(--fg2); margin-top: 2px; }
+
+  .switch { position: relative; width: 36px; height: 20px; flex-shrink: 0; margin-left: 10px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0;
+    background: #444;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .slider::before {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    left: 3px; top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform .2s;
+  }
+  .switch input:checked + .slider { background: var(--accent); }
+  .switch input:checked + .slider::before { transform: translateX(16px); }
+
+  /* ── Timer bar ── */
+  #timer-section { margin-bottom: 14px; display: none; }
+  .timer-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--fg2);
+    margin-bottom: 5px;
+  }
+  .timer-bar-bg {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  #timer-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    width: 0%;
+    transition: width .5s linear;
+  }
+
+  /* ── Buttons ── */
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .btn {
+    flex: 1;
+    padding: 7px 10px;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 500;
+    transition: opacity .15s;
+  }
+  .btn:hover { opacity: .88; }
+  .btn:active { opacity: .7; }
+  .btn-primary { background: var(--accent); color: var(--accent-fg); }
+  .btn-secondary {
+    background: var(--input-bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+  }
+  .btn-danger { background: #5a1d1d; color: #f88; border: 1px solid #7a3030; }
+  .btn:disabled { opacity: .45; cursor: default; }
+
+  /* ── Message input ── */
+  .msg-wrap { margin-bottom: 14px; }
+  .msg-label { font-size: 11px; color: var(--fg2); margin-bottom: 5px; display: flex; justify-content: space-between; }
+  textarea {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    border-radius: var(--radius);
+    padding: 8px;
+    font-family: inherit;
+    font-size: 12px;
+    resize: vertical;
+    min-height: 56px;
+    max-height: 120px;
+    outline: none;
+  }
+  textarea:focus { border-color: var(--accent); }
+
+  /* ── Diff preview ── */
+  #diff-section { margin-bottom: 14px; }
+  .diff-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .diff-stats { display: flex; gap: 8px; font-size: 11px; }
+  .diff-added { color: var(--success); }
+  .diff-removed { color: var(--danger); }
+  .diff-files-list {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    max-height: 120px;
+    overflow-y: auto;
+    font-size: 11px;
+  }
+  .diff-file {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+    cursor: default;
+  }
+  .diff-file:last-child { border-bottom: none; }
+  .diff-file-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    min-width: 14px;
+    text-align: center;
+  }
+  .badge-M { background: #2a4a7a; color: #79b8ff; }
+  .badge-A { background: #264f3e; color: var(--success); }
+  .badge-D { background: #3e2626; color: var(--danger); }
+  .badge-R { background: #3e3426; color: #e5c07b; }
+  .diff-filename { color: var(--fg); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ── Recent commits ── */
+  #commits-section { }
+  .commit-list { }
+  .commit-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .commit-item:last-child { border-bottom: none; }
+  .commit-item:hover .commit-msg { color: var(--accent); }
+  .commit-top { display: flex; align-items: center; gap: 6px; }
+  .commit-hash {
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 10px;
+    color: var(--fg2);
+    background: var(--badge-bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .commit-msg { font-size: 12px; font-weight: 500; flex: 1; }
+  .commit-meta { font-size: 10px; color: var(--fg2); }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 16px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #2d2d2d;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity .2s, transform .2s;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 999;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── Empty state ── */
+  .empty { color: var(--fg2); font-size: 12px; text-align: center; padding: 16px 0; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <span class="header-icon">🚀</span>
+  <span class="header-title">GitPilot</span>
+  <span class="header-branch" id="branch-label">loading...</span>
+</div>
+
+<!-- Status card -->
+<div class="status-card">
+  <div class="status-row">
+    <span class="status-label">Status</span>
+    <span class="status-value" id="repo-status">
+      <span class="dot dot-gray"></span>Checking...
+    </span>
+  </div>
+  <div class="status-row">
+    <span class="status-label">Remote</span>
+    <span class="status-value" id="remote-status">—</span>
+  </div>
+  <div class="status-row">
+    <span class="status-label">Last commit</span>
+    <span class="status-value" id="last-commit">—</span>
+  </div>
+</div>
+
+<!-- Toggles -->
+<div class="section">
+  <div class="section-title">Automation</div>
+
+  <div class="toggle-row">
+    <div class="toggle-info">
+      <div class="toggle-name">Auto-commit</div>
+      <div class="toggle-desc">Commit after <span id="debounce-label">30s</span> of inactivity</div>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="auto-commit-toggle" onchange="toggleAutoCommit(this.checked)"/>
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="toggle-row">
+    <div class="toggle-info">
+      <div class="toggle-name">Auto-push</div>
+      <div class="toggle-desc">Push to remote after each commit</div>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="auto-push-toggle" onchange="toggleAutoPush(this.checked)"/>
+      <span class="slider"></span>
+    </label>
+  </div>
+</div>
+
+<!-- Timer progress (shown when auto-commit is on and changes exist) -->
+<div id="timer-section">
+  <div class="timer-label">
+    <span>Committing in...</span>
+    <span id="timer-countdown">30s</span>
+  </div>
+  <div class="timer-bar-bg"><div id="timer-bar"></div></div>
+</div>
+
+<!-- Commit message input -->
+<div class="msg-wrap">
+  <div class="msg-label">
+    <span>Commit message</span>
+    <span id="msg-style" style="color:var(--accent);cursor:pointer" onclick="rotateStyle()">conventional</span>
+  </div>
+  <textarea id="commit-msg" placeholder="Auto-generated from your diff — or type here..."></textarea>
+</div>
+
+<!-- Action buttons -->
+<div class="btn-row">
+  <button class="btn btn-primary" id="commit-btn" onclick="doCommit(false)">⬡ Commit</button>
+  <button class="btn btn-secondary" id="push-btn" onclick="doCommit(true)">↑ Push</button>
+</div>
+<div class="btn-row" style="margin-top:-6px">
+  <button class="btn btn-secondary" onclick="generateMessage()">⟳ Regenerate msg</button>
+  <button class="btn btn-danger" onclick="doUndo()">↩ Undo last</button>
+</div>
+
+<!-- Changed files -->
+<div id="diff-section">
+  <div class="diff-header">
+    <div class="section-title" style="margin:0">Changed files</div>
+    <div class="diff-stats">
+      <span class="diff-added" id="lines-added">+0</span>
+      <span class="diff-removed" id="lines-removed">-0</span>
+    </div>
+  </div>
+  <div class="diff-files-list" id="files-list">
+    <div class="empty">No changes detected</div>
+  </div>
+</div>
+
+<!-- Spacer -->
+<div style="height:12px"></div>
+
+<!-- Recent commits -->
+<div id="commits-section">
+  <div class="section-title">Recent commits</div>
+  <div class="commit-list" id="commit-list">
+    <div class="empty">Loading...</div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<script>
+  const vscode = acquireVsCodeApi();
+  let state = {};
+  let timerInterval = null;
+
+  // ── Message handling ────────────────────────────────────────────────────────
+  window.addEventListener('message', ({ data }) => {
+    switch (data.type) {
+      case 'init':
+      case 'update':
+        state = data;
+        render(data);
+        break;
+      case 'toast':
+        showToast(data.message, data.isError);
+        break;
+      case 'timerTick':
+        updateTimer(data.remaining, data.total);
+        break;
+    }
+  });
+
+  function render(d) {
+    // Branch
+    document.getElementById('branch-label').textContent = d.branch || 'no branch';
+
+    // Status
+    const statusEl = document.getElementById('repo-status');
+    if (d.hasChanges) {
+      statusEl.innerHTML = '<span class="dot dot-orange"></span>Uncommitted changes';
+    } else {
+      statusEl.innerHTML = '<span class="dot dot-green"></span>Clean';
+    }
+
+    // Remote
+    const remoteEl = document.getElementById('remote-status');
+    if (d.ahead > 0 || d.behind > 0) {
+      let html = '';
+      if (d.ahead > 0) html += `<span class="pill pill-ahead">↑ ${d.ahead} ahead</span> `;
+      if (d.behind > 0) html += `<span class="pill pill-behind">↓ ${d.behind} behind</span>`;
+      remoteEl.innerHTML = html;
+    } else {
+      remoteEl.textContent = d.remoteUrl ? 'In sync' : 'No remote';
+    }
+
+    // Last commit
+    const lc = d.recentCommits?.[0];
+    document.getElementById('last-commit').textContent = lc
+      ? `${lc.message.slice(0, 30)}${lc.message.length > 30 ? '…' : ''} (${lc.date})`
+      : '—';
+
+    // Toggles
+    document.getElementById('auto-commit-toggle').checked = d.autoCommit;
+    document.getElementById('auto-push-toggle').checked = d.autoPush;
+    document.getElementById('debounce-label').textContent = `${d.debounceSeconds || 30}s`;
+
+    // Timer section
+    document.getElementById('timer-section').style.display =
+      (d.autoCommit && d.hasChanges) ? 'block' : 'none';
+
+    // Message style label
+    document.getElementById('msg-style').textContent = d.commitStyle || 'conventional';
+
+    // Commit message (only pre-fill if empty or generated)
+    const msgArea = document.getElementById('commit-msg');
+    if (d.suggestedMessage && (!msgArea.dataset.userEdited || msgArea.value === '')) {
+      msgArea.value = d.suggestedMessage;
+      msgArea.dataset.userEdited = '';
+    }
+
+    // Files list
+    renderFiles(d.changeSummary || {});
+
+    // Commits
+    renderCommits(d.recentCommits || []);
+
+    // Diff stats
+    document.getElementById('lines-added').textContent = `+${d.linesAdded || 0}`;
+    document.getElementById('lines-removed').textContent = `-${d.linesRemoved || 0}`;
+
+    // Disable buttons when nothing to commit
+    document.getElementById('commit-btn').disabled = !d.hasChanges;
+    document.getElementById('push-btn').disabled = !d.hasChanges && d.ahead === 0;
+  }
+
+  function renderFiles(summary) {
+    const list = document.getElementById('files-list');
+    const files = summary.files || [];
+    if (!files.length) {
+      list.innerHTML = '<div class="empty">No changes detected</div>';
+      return;
+    }
+
+    const badgeFor = (f) => {
+      if ((summary.added || []).includes(f) || (summary.untracked || []).includes(f))
+        return '<span class="diff-file-badge badge-A">A</span>';
+      if ((summary.deleted || []).includes(f))
+        return '<span class="diff-file-badge badge-D">D</span>';
+      if ((summary.renamed || []).includes(f))
+        return '<span class="diff-file-badge badge-R">R</span>';
+      return '<span class="diff-file-badge badge-M">M</span>';
+    };
+
+    list.innerHTML = files.map(f => `
+      <div class="diff-file" title="${f}">
+        ${badgeFor(f)}
+        <span class="diff-filename">${f}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderCommits(commits) {
+    const list = document.getElementById('commit-list');
+    if (!commits.length) {
+      list.innerHTML = '<div class="empty">No commits yet</div>';
+      return;
+    }
+    list.innerHTML = commits.map(c => `
+      <div class="commit-item" onclick="copyHash('${c.hash}')">
+        <div class="commit-top">
+          <span class="commit-hash">${c.hash}</span>
+          <span class="commit-msg">${escHtml(c.message)}</span>
+        </div>
+        <div class="commit-meta">${escHtml(c.author)} · ${c.date}</div>
+      </div>
+    `).join('');
+  }
+
+  function updateTimer(remaining, total) {
+    document.getElementById('timer-section').style.display = 'block';
+    document.getElementById('timer-countdown').textContent = `${remaining}s`;
+    const pct = ((total - remaining) / total) * 100;
+    document.getElementById('timer-bar').style.width = `${pct}%`;
+  }
+
+  // ── Actions ──────────────────────────────────────────────────────────────────
+  function toggleAutoCommit(v) {
+    vscode.postMessage({ type: 'toggleAutoCommit', value: v });
+  }
+  function toggleAutoPush(v) {
+    vscode.postMessage({ type: 'toggleAutoPush', value: v });
+  }
+  function doCommit(andPush) {
+    const msg = document.getElementById('commit-msg').value.trim();
+    vscode.postMessage({ type: 'commit', andPush, message: msg });
+    document.getElementById('commit-msg').dataset.userEdited = '';
+    document.getElementById('commit-msg').value = '';
+  }
+  function doUndo() {
+    if (!confirm('Undo the last commit? Your changes will remain staged.')) return;
+    vscode.postMessage({ type: 'undo' });
+  }
+  function generateMessage() {
+    document.getElementById('commit-msg').dataset.userEdited = '';
+    document.getElementById('commit-msg').value = '';
+    vscode.postMessage({ type: 'generateMessage' });
+  }
+  function copyHash(hash) {
+    vscode.postMessage({ type: 'copyHash', hash });
+    showToast(`Copied ${hash}`);
+  }
+
+  const styles = ['conventional', 'simple', 'emoji'];
+  function rotateStyle() {
+    const current = document.getElementById('msg-style').textContent;
+    const next = styles[(styles.indexOf(current) + 1) % styles.length];
+    vscode.postMessage({ type: 'setStyle', value: next });
+  }
+
+  // Mark as user-edited once they type
+  document.getElementById('commit-msg').addEventListener('input', function() {
+    this.dataset.userEdited = '1';
+  });
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = (isError ? '✖ ' : '✓ ') + msg;
+    t.style.borderColor = isError ? '#f44' : 'var(--border)';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Request initial state
+  vscode.postMessage({ type: 'ready' });
+</script>
+</body>
+</html>

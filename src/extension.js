@@ -1,0 +1,383 @@
+const vscode = require('vscode');
+const fs = require('fs');
+const path = require('path');
+const micromatch = require('micromatch');
+
+const gitOps = require('./git/gitOps');
+const { generateMessage, fallbackMessage } = require('./git/commitMessage');
+
+let repoRoot = null;
+let statusBarItem = null;
+let fileWatcher = null;
+let timerInterval = null;
+let timerRemaining = 0;
+let webviewPanel = null;
+let outputChannel = null;
+
+function activate(context) {
+  outputChannel = vscode.window.createOutputChannel('GitPilot');
+  log('Activating GitPilot...');
+
+  repoRoot = detectRepoRoot();
+  if (!repoRoot) {
+    log('No git repository found in workspace.');
+    return;
+  }
+
+  statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  statusBarItem.command = 'gitpilot.openPanel';
+  context.subscriptions.push(statusBarItem);
+  updateStatusBar();
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('gitpilot.commit', () => runCommit(false)),
+    vscode.commands.registerCommand('gitpilot.commitAndPush', () => runCommit(true)),
+    vscode.commands.registerCommand('gitpilot.toggleAutoCommit', toggleAutoCommit),
+    vscode.commands.registerCommand('gitpilot.toggleAutoPush', toggleAutoPush),
+    vscode.commands.registerCommand('gitpilot.undo', runUndo),
+    vscode.commands.registerCommand('gitpilot.openPanel', openPanel),
+  );
+
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider('gitpilot.panel', {
+      resolveWebviewView(view) {
+        webviewPanel = view;
+        view.webview.options = { enableScripts: true };
+        view.webview.html = getPanelHtml();
+
+        view.webview.onDidReceiveMessage((message) => handleWebviewMessage(message));
+        setTimeout(() => sendPanelState(), 200);
+      },
+    }),
+  );
+
+  setupFileWatcher(context);
+
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (!event.affectsConfiguration('gitpilot')) return;
+      setupFileWatcher(context);
+      updateStatusBar();
+      sendPanelState();
+    }),
+  );
+
+  const refreshHandle = setInterval(() => {
+    if (webviewPanel?.visible) sendPanelState();
+    updateStatusBar();
+  }, 5000);
+
+  context.subscriptions.push({ dispose: () => clearInterval(refreshHandle) });
+  log('GitPilot ready.');
+}
+
+function deactivate() {
+  clearDebounce();
+  fileWatcher?.dispose();
+  outputChannel?.dispose();
+}
+
+function detectRepoRoot() {
+  const folders = vscode.workspace.workspaceFolders || [];
+  for (const folder of folders) {
+    const dir = folder.uri.fsPath;
+    if (!gitOps.isGitRepo(dir)) continue;
+    try {
+      return gitOps.getRepoRoot(dir);
+    } catch {
+      return dir;
+    }
+  }
+  return null;
+}
+
+function setupFileWatcher(context) {
+  fileWatcher?.dispose();
+
+  const config = getConfig();
+  if (!config.autoCommit) {
+    clearDebounce();
+    return;
+  }
+
+  const watcher = vscode.workspace.createFileSystemWatcher('**/*', false, false, false);
+  const onFileChange = (uri) => {
+    const relPath = vscode.workspace.asRelativePath(uri);
+    if (shouldExclude(relPath, config.excludePatterns)) return;
+
+    log(`Change detected: ${relPath}`);
+    scheduleAutoCommit(config.debounceSeconds);
+    sendTimerUpdate(timerRemaining, config.debounceSeconds);
+  };
+
+  watcher.onDidCreate(onFileChange);
+  watcher.onDidChange(onFileChange);
+  watcher.onDidDelete(onFileChange);
+
+  context.subscriptions.push(watcher);
+  fileWatcher = watcher;
+}
+
+function shouldExclude(relPath, patterns) {
+  if (!relPath) return true;
+  return micromatch.isMatch(relPath, patterns || []);
+}
+
+function scheduleAutoCommit(seconds) {
+  clearDebounce();
+  timerRemaining = seconds;
+
+  timerInterval = setInterval(() => {
+    timerRemaining -= 1;
+    sendTimerUpdate(timerRemaining, seconds);
+
+    if (timerRemaining > 0) return;
+
+    clearDebounce();
+    runAutoCommit();
+  }, 1000);
+}
+
+function clearDebounce() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+  timerRemaining = 0;
+}
+
+async function runAutoCommit() {
+  if (!repoRoot || !gitOps.hasChanges(repoRoot)) return;
+
+  try {
+    const config = getConfig();
+    const summary = gitOps.getChangeSummary(repoRoot);
+    const diff = gitOps.getDiff(repoRoot);
+    const message = generateMessage(summary, diff, config.commitStyle);
+
+    await gitOps.stageAll(repoRoot);
+    await gitOps.commit(repoRoot, message);
+
+    if (config.autoPush) {
+      await gitOps.push(repoRoot);
+      toast(`Auto-committed and pushed: ${message}`);
+    } else {
+      toast(`Auto-committed: ${message}`);
+    }
+
+    sendPanelState();
+    updateStatusBar();
+  } catch (error) {
+    log(`Auto-commit failed: ${error.message}`, true);
+    toast(`Auto-commit failed: ${error.message}`, true);
+  }
+}
+
+async function runCommit(andPush, customMessage) {
+  if (!repoRoot) {
+    toast('No git repository found.', true);
+    return;
+  }
+
+  try {
+    const hasChanges = gitOps.hasChanges(repoRoot);
+    if (!hasChanges && !andPush) {
+      toast('Nothing to commit.');
+      return;
+    }
+
+    let message = customMessage;
+    if (!message) {
+      const config = getConfig();
+      if (hasChanges) {
+        const summary = gitOps.getChangeSummary(repoRoot);
+        const diff = gitOps.getDiff(repoRoot);
+        message = generateMessage(summary, diff, config.commitStyle);
+      } else {
+        message = fallbackMessage(config.commitStyle);
+      }
+    }
+
+    if (hasChanges) {
+      await gitOps.stageAll(repoRoot);
+      await gitOps.commit(repoRoot, message);
+      log(`Committed: ${message}`);
+    }
+
+    if (andPush) {
+      await gitOps.push(repoRoot);
+      toast(hasChanges ? `Committed and pushed: ${message}` : 'Pushed current branch.');
+    } else if (hasChanges) {
+      toast(`Committed: ${message}`);
+    }
+
+    clearDebounce();
+    sendPanelState();
+    updateStatusBar();
+  } catch (error) {
+    log(`Commit flow failed: ${error.message}`, true);
+    toast(error.message, true);
+  }
+}
+
+async function runUndo() {
+  if (!repoRoot) return;
+
+  const confirm = await vscode.window.showWarningMessage(
+    'Undo the last commit? Changes will remain staged.',
+    { modal: true },
+    'Undo',
+  );
+
+  if (confirm !== 'Undo') return;
+
+  try {
+    await gitOps.undoLastCommit(repoRoot);
+    toast('Last commit undone. Changes are staged.');
+    sendPanelState();
+    updateStatusBar();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+function updateStatusBar() {
+  if (!statusBarItem || !repoRoot) return;
+
+  const config = getConfig();
+  const branch = gitOps.getCurrentBranch(repoRoot);
+  const flags = [
+    config.autoCommit ? '$(sync~spin)' : '$(git-commit)',
+    config.autoPush ? '$(cloud-upload)' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  statusBarItem.text = `${flags} ${branch}`;
+  statusBarItem.tooltip = [
+    `GitPilot - ${branch}`,
+    `Auto-commit: ${config.autoCommit ? `on (${config.debounceSeconds}s)` : 'off'}`,
+    `Auto-push: ${config.autoPush ? 'on' : 'off'}`,
+    'Click to open panel',
+  ].join('\n');
+  statusBarItem.show();
+}
+
+function openPanel() {
+  vscode.commands.executeCommand('gitpilot.panel.focus');
+}
+
+function getPanelHtml() {
+  const htmlPath = path.join(__dirname, 'ui', 'panel.html');
+  return fs.readFileSync(htmlPath, 'utf8');
+}
+
+function handleWebviewMessage(message) {
+  switch (message.type) {
+    case 'ready':
+    case 'generateMessage':
+      sendPanelState();
+      break;
+    case 'commit':
+      runCommit(Boolean(message.andPush), message.message || null);
+      break;
+    case 'undo':
+      runUndo();
+      break;
+    case 'toggleAutoCommit':
+      vscode.workspace.getConfiguration('gitpilot').update('autoCommit', Boolean(message.value), true);
+      break;
+    case 'toggleAutoPush':
+      vscode.workspace.getConfiguration('gitpilot').update('autoPush', Boolean(message.value), true);
+      break;
+    case 'setStyle':
+      vscode.workspace.getConfiguration('gitpilot').update('commitStyle', message.value, true);
+      sendPanelState();
+      break;
+    case 'copyHash':
+      if (message.hash) vscode.env.clipboard.writeText(message.hash);
+      break;
+    default:
+      break;
+  }
+}
+
+function sendPanelState() {
+  if (!webviewPanel || !repoRoot) return;
+
+  const config = getConfig();
+  const hasChanges = gitOps.hasChanges(repoRoot);
+  const changeSummary = hasChanges
+    ? gitOps.getChangeSummary(repoRoot)
+    : { added: [], modified: [], deleted: [], renamed: [], untracked: [], files: [] };
+  const diff = hasChanges ? gitOps.getDiff(repoRoot) : '';
+
+  const linesAdded = (diff.match(/^\+[^+]/gm) || []).length;
+  const linesRemoved = (diff.match(/^-[^-]/gm) || []).length;
+  const suggestedMessage = hasChanges
+    ? generateMessage(changeSummary, diff, config.commitStyle)
+    : '';
+
+  const { ahead, behind } = gitOps.getAheadBehind(repoRoot);
+  const payload = {
+    type: 'update',
+    branch: gitOps.getCurrentBranch(repoRoot),
+    hasChanges,
+    changeSummary,
+    linesAdded,
+    linesRemoved,
+    suggestedMessage,
+    recentCommits: gitOps.getRecentCommits(repoRoot, 8),
+    ahead,
+    behind,
+    remoteUrl: gitOps.getRemoteUrl(repoRoot),
+    autoCommit: config.autoCommit,
+    autoPush: config.autoPush,
+    debounceSeconds: config.debounceSeconds,
+    commitStyle: config.commitStyle,
+  };
+
+  webviewPanel.webview.postMessage(payload);
+}
+
+function sendTimerUpdate(remaining, total) {
+  webviewPanel?.webview.postMessage({ type: 'timerTick', remaining, total });
+}
+
+function getConfig() {
+  const config = vscode.workspace.getConfiguration('gitpilot');
+  return {
+    autoCommit: config.get('autoCommit', false),
+    autoPush: config.get('autoPush', false),
+    debounceSeconds: config.get('debounceSeconds', 30),
+    commitStyle: config.get('commitStyle', 'conventional'),
+    excludePatterns: config.get('excludePatterns', ['*.log', 'node_modules/**', '.env']),
+  };
+}
+
+function toggleAutoCommit() {
+  const config = vscode.workspace.getConfiguration('gitpilot');
+  config.update('autoCommit', !config.get('autoCommit', false), true);
+}
+
+function toggleAutoPush() {
+  const config = vscode.workspace.getConfiguration('gitpilot');
+  config.update('autoPush', !config.get('autoPush', false), true);
+}
+
+function toast(message, isError = false) {
+  if (isError) vscode.window.showErrorMessage(`GitPilot: ${message}`);
+  else vscode.window.showInformationMessage(`GitPilot: ${message}`);
+
+  webviewPanel?.webview.postMessage({ type: 'toast', message, isError });
+}
+
+function log(message, isError = false) {
+  const time = new Date().toISOString().slice(11, 19);
+  outputChannel?.appendLine(`[${time}] ${isError ? 'ERROR: ' : ''}${message}`);
+}
+
+module.exports = {
+  activate,
+  deactivate,
+};

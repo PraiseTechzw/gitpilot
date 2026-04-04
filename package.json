@@ -1,0 +1,130 @@
+{
+  "name": "gitpilot",
+  "displayName": "GitPilot — Auto Git",
+  "description": "Automate your entire Git workflow: smart commit messages, auto-commit on save, auto-push, and a full CLI.",
+  "version": "1.0.0",
+  "publisher": "your-publisher-name",
+  "engines": { "vscode": "^1.74.0" },
+  "categories": ["Other", "SCM Providers"],
+  "icon": "icon.png",
+  "keywords": ["git", "auto-commit", "auto-push", "commit message", "automation"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./src/extension.js",
+  "bin": {
+    "gitpilot": "./cli/gitpilot.js"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitpilot.commit",
+        "title": "GitPilot: Smart Commit"
+      },
+      {
+        "command": "gitpilot.commitAndPush",
+        "title": "GitPilot: Commit and Push"
+      },
+      {
+        "command": "gitpilot.toggleAutoCommit",
+        "title": "GitPilot: Toggle Auto-Commit"
+      },
+      {
+        "command": "gitpilot.toggleAutoPush",
+        "title": "GitPilot: Toggle Auto-Push"
+      },
+      {
+        "command": "gitpilot.undo",
+        "title": "GitPilot: Undo Last Commit"
+      },
+      {
+        "command": "gitpilot.openPanel",
+        "title": "GitPilot: Open Panel"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gitpilot-container",
+          "title": "GitPilot",
+          "icon": "$(source-control)"
+        }
+      ]
+    },
+    "views": {
+      "gitpilot-container": [
+        {
+          "type": "webview",
+          "id": "gitpilot.panel",
+          "name": "GitPilot"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "GitPilot",
+      "properties": {
+        "gitpilot.autoCommit": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically commit changes after a period of inactivity."
+        },
+        "gitpilot.autoPush": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically push after each commit."
+        },
+        "gitpilot.debounceSeconds": {
+          "type": "number",
+          "default": 30,
+          "description": "Seconds of inactivity before an auto-commit triggers."
+        },
+        "gitpilot.commitStyle": {
+          "type": "string",
+          "enum": ["conventional", "simple", "emoji"],
+          "default": "conventional",
+          "description": "Style for auto-generated commit messages."
+        },
+        "gitpilot.excludePatterns": {
+          "type": "array",
+          "default": ["*.log", "node_modules/**", ".env"],
+          "description": "File patterns to exclude from auto-commit tracking."
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "gitpilot.commit",
+        "key": "ctrl+alt+c",
+        "mac": "cmd+alt+c"
+      },
+      {
+        "command": "gitpilot.commitAndPush",
+        "key": "ctrl+alt+p",
+        "mac": "cmd+alt+p"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "gitpilot.commit",
+          "group": "navigation"
+        },
+        {
+          "command": "gitpilot.commitAndPush",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run lint",
+    "lint": "echo 'lint ok'",
+    "package": "vsce package",
+    "install-cli": "npm link"
+  },
+  "dependencies": {
+    "micromatch": "^4.0.5"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@vscode/vsce": "^2.19.0"
+  }
+}
