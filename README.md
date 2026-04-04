@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icon.svg" alt="GitPilot logo" width="128" height="128" />
+  <img src="icon.png" alt="GitPilot logo" width="128" height="128" />
 </p>
 
 # GitPilot

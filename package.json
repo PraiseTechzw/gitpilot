@@ -11,7 +11,7 @@
     "name": "PraiseTechzw",
     "url": "https://www.npmjs.com/~praisetechzw"
   },
-  "icon": "icon.svg",
+  "icon": "icon.png",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -27,7 +27,7 @@
     "README.md",
     "LICENSE*",
     "gitpilot_architecture.svg",
-    "icon.svg"
+    "icon.png"
   ],
   "activationEvents": ["onStartupFinished"],
   "main": "./src/extension.js",
