@@ -275,7 +275,7 @@ function updateStatusBar() {
   const branch = repoExists ? gitOps.getCurrentBranch(repoRoot) : 'no-repo';
   
   let state = 'idle';
-  let icon = '$(check)';
+  let icon = '$(rocket)';
   let text = 'GitPilot';
   let bgColor = undefined;
   let tooltip = 'GitPilot: Working directory is clean.';
@@ -293,7 +293,7 @@ function updateStatusBar() {
     tooltip = `Auto-committing in ${timerRemaining}s. Click to commit now.`;
   } else if (hasChanges) {
     state = 'dirty';
-    icon = '$(circle-outline)';
+    icon = '$(rocket)';
     const changeCount = gitOps.getChangeSummary(repoRoot).files.length;
     text = `GitPilot: ${changeCount} change${changeCount > 1 ? 's' : ''}`;
     tooltip = `${changeCount} uncommitted files. Auto-commit active.`;

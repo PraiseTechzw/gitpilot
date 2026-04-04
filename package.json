@@ -66,7 +66,7 @@
         {
           "id": "gitpilot-container",
           "title": "GitPilot",
-          "icon": "icon.png"
+          "icon": "icon.svg"
         }
       ]
     },
@@ -76,7 +76,7 @@
           "type": "webview",
           "id": "gitpilot.panel",
           "name": "GitPilot",
-          "icon": "icon.png"
+          "icon": "icon.svg"
         }
       ]
     },
