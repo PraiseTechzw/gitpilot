@@ -10,6 +10,7 @@ let statusBarItem = null;
 let fileWatcher = null;
 let timerInterval = null;
 let timerRemaining = 0;
+let lastStatusState = 'idle'; // 'idle', 'dirty', 'countdown', 'active', 'error'
 let webviewPanel = null;
 let outputChannel = null;
 
@@ -56,6 +57,12 @@ function activate(context) {
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (!event.affectsConfiguration('gitpilot')) return;
+      
+      // Update HTML if UI experimental mode changed
+      if (event.affectsConfiguration('gitpilot.experimentalUI') && webviewPanel) {
+        webviewPanel.webview.html = getPanelHtml();
+      }
+
       setupFileWatcher(context);
       updateStatusBar();
       sendPanelState();
@@ -263,23 +270,50 @@ function updateStatusBar() {
   if (!statusBarItem) return;
 
   const config = getConfig();
-  const branch = repoRoot ? gitOps.getCurrentBranch(repoRoot) : 'no-repo';
-  const flags = [
-    config.autoCommit ? '$(sync~spin)' : '$(git-commit)',
-    config.autoPush ? '$(cloud-upload)' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const repoExists = Boolean(repoRoot);
+  const hasChanges = repoExists && gitOps.hasChanges(repoRoot);
+  const branch = repoExists ? gitOps.getCurrentBranch(repoRoot) : 'no-repo';
+  
+  let state = 'idle';
+  let icon = '$(check)';
+  let text = 'GitPilot';
+  let bgColor = undefined;
+  let tooltip = 'GitPilot: Working directory is clean.';
 
-  statusBarItem.text = `${flags} ${branch}`;
-  statusBarItem.tooltip = [
-    `GitPilot - ${branch}`,
-    repoRoot ? 'Repository detected' : 'No git repository detected in open workspace',
-    `Auto-commit: ${config.autoCommit ? `on (${config.debounceSeconds}s)` : 'off'}`,
-    `Auto-push: ${config.autoPush ? 'on' : 'off'}`,
-    'Click to open panel',
-  ].join('\n');
+  if (!repoExists) {
+    state = 'no-repo';
+    icon = '$(stop)';
+    text = 'GitPilot: No Repo';
+    tooltip = 'GitPilot: No Git repository detected in the current workspace.';
+  } else if (timerInterval && timerRemaining > 0) {
+    state = 'countdown';
+    icon = '$(sync~spin)';
+    text = `${getProgressBar(timerRemaining, config.debounceSeconds)} ${timerRemaining}s`;
+    bgColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+    tooltip = `Auto-committing in ${timerRemaining}s. Click to commit now.`;
+  } else if (hasChanges) {
+    state = 'dirty';
+    icon = '$(circle-outline)';
+    const changeCount = gitOps.getChangeSummary(repoRoot).files.length;
+    text = `GitPilot: ${changeCount} change${changeCount > 1 ? 's' : ''}`;
+    tooltip = `${changeCount} uncommitted files. Auto-commit active.`;
+  }
+
+  // Handle errors (simplified for this context, could be expanded)
+  // if (lastError) { ... }
+
+  statusBarItem.text = `${icon} ${text}`;
+  statusBarItem.backgroundColor = bgColor;
+  statusBarItem.tooltip = tooltip;
   statusBarItem.show();
+}
+
+function getProgressBar(remaining, total) {
+  const size = 5;
+  const progress = Math.min(Math.max((total - remaining) / total, 0), 1);
+  const filledCount = Math.round(progress * size);
+  const emptyCount = size - filledCount;
+  return '[' + '█'.repeat(filledCount) + '░'.repeat(emptyCount) + ']';
 }
 
 function openPanel() {
@@ -287,7 +321,9 @@ function openPanel() {
 }
 
 function getPanelHtml() {
-  const htmlPath = path.join(__dirname, 'ui', 'panel.html');
+  const config = getConfig();
+  const fileName = config.experimentalUI ? 'panel-modern.html' : 'panel.html';
+  const htmlPath = path.join(__dirname, 'ui', fileName);
   return fs.readFileSync(htmlPath, 'utf8');
 }
 
@@ -315,6 +351,9 @@ function handleWebviewMessage(message) {
       break;
     case 'copyHash':
       if (message.hash) vscode.env.clipboard.writeText(message.hash);
+      break;
+    case 'openFolder':
+      vscode.commands.executeCommand('vscode.openFolder');
       break;
     default:
       break;
@@ -392,6 +431,7 @@ function getConfig() {
     debounceSeconds: config.get('debounceSeconds', 30),
     commitStyle: config.get('commitStyle', 'conventional'),
     excludePatterns: config.get('excludePatterns', ['*.log', 'node_modules/**', '.env']),
+    experimentalUI: config.get('experimentalUI', true),
   };
 }
 

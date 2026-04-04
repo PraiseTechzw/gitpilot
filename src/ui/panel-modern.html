@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';"/>
+<style>
+  :root {
+    /* Theme variable mapping with a "Deep Space" flavor */
+    --bg: var(--vscode-sideBar-background);
+    --fg: var(--vscode-foreground);
+    --fg-muted: var(--vscode-descriptionForeground);
+    --accent: var(--vscode-button-background, #0e639c);
+    --accent-hover: var(--vscode-button-hoverBackground, #1177bb);
+    --accent-fg: var(--vscode-button-foreground, #ffffff);
+    --border: var(--vscode-panel-border, rgba(128, 128, 128, 0.2));
+    --input-bg: var(--vscode-input-background);
+    --input-fg: var(--vscode-input-foreground);
+    --radius-lg: 12px;
+    --radius-sm: 6px;
+    
+    /* Branding Accent: Electric Cyan (mapped to buttons in dark, tinted in light) */
+    --brand: #00ffff;
+    --brand-glow: rgba(0, 255, 255, 0.3);
+    
+    /* State Colors */
+    --success: var(--vscode-testing-iconPassed, #4ec9b0);
+    --warning: var(--vscode-testing-iconQueued, #ce9178);
+    --error: var(--vscode-testing-iconFailed, #f44747);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--fg);
+    padding: 16px;
+    user-select: none;
+    line-height: 1.4;
+    overflow-x: hidden;
+  }
+
+  /* ── Glassmorphism Core ── */
+  .glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: transform 0.2s, background 0.2s;
+  }
+  
+  /* High Contrast Support */
+  @media (forced-colors: active) {
+    .glass { border: 1px solid CanvasText; }
+  }
+
+  /* ── Layout States ── */
+  #main-view { display: none; flex-direction: column; gap: 16px; }
+  #no-repo-view { display: none; text-align: center; padding: 40px 20px; }
+  #syncing-view { display: none; text-align: center; padding: 40px 20px; }
+
+  /* ── Hero Sections ── */
+  .hero-icon { font-size: 48px; margin-bottom: 16px; display: block; filter: drop-shadow(0 0 10px var(--brand-glow)); }
+  .hero-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .hero-desc { color: var(--fg-muted); font-size: 12px; margin-bottom: 24px; }
+
+  /* ── Dashboard Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    margin-bottom: 8px;
+  }
+  .brand-group { display: flex; align-items: center; gap: 10px; }
+  .logo { 
+    width: 24px; height: 24px; 
+    background: linear-gradient(135deg, #00ffff, #0e639c);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: bold; font-size: 14px;
+  }
+  .branch-pill {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: var(--vscode-editor-font-family, monospace);
+    color: var(--brand);
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* ── Cards ── */
+  .card { padding: 16px; margin-bottom: 12px; }
+  .card-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--fg-muted);
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ── Status Row ── */
+  .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-box {
+    background: rgba(0,0,0,0.1);
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+  .stat-label { font-size: 10px; color: var(--fg-muted); margin-bottom: 4px; }
+  .stat-value { font-size: 13px; font-weight: 600; }
+
+  /* ── Toggles (Accessible) ── */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: rgba(0,0,0,0.05);
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .toggle-label-grp { flex: 1; }
+  .toggle-name { font-size: 13px; font-weight: 500; }
+  .toggle-desc { font-size: 11px; color: var(--fg-muted); }
+
+  .switch {
+    width: 32px; height: 18px;
+    background: #444; border-radius: 10px;
+    position: relative; transition: .2s;
+  }
+  .switch::after {
+    content: ''; position: absolute;
+    width: 12px; height: 12px;
+    left: 3px; top: 3px;
+    background: white; border-radius: 50%;
+    transition: .2s;
+  }
+  .toggle-active .switch { background: var(--accent); }
+  .toggle-active .switch::after { transform: translateX(14px); }
+
+  /* ── Commit Area ── */
+  .commit-container { display: flex; flex-direction: column; gap: 8px; }
+  textarea {
+    width: 100%; min-height: 80px;
+    background: var(--input-bg);
+    color: var(--input-fg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    font-family: inherit;
+    font-size: 12px;
+    resize: none;
+    outline: none;
+  }
+  textarea:focus { border-color: var(--accent); }
+
+  .btn-grp { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  button {
+    padding: 10px; border: none; border-radius: var(--radius-sm);
+    font-weight: 600; cursor: pointer; transition: 0.2s;
+    font-family: inherit; font-size: 12px;
+  }
+  .btn-main { background: var(--accent); color: var(--accent-fg); }
+  .btn-main:hover { background: var(--accent-hover); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--fg); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.05); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── Progress Bar ── */
+  #timer-wrap { display: none; margin-top: 12px; }
+  .progress-bg { height: 6px; background: rgba(0,0,0,0.2); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+  #progress-bar { height: 100%; background: var(--brand); width: 0%; transition: width 1s linear; }
+
+  /* ── File List ── */
+  .file-list { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+  .file-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; background: rgba(255,255,255,0.02);
+    border-radius: 4px; font-size: 11px;
+  }
+  .file-badge {
+    padding: 1px 5px; border-radius: 3px; font-weight: 700; font-size: 9px;
+  }
+  .badge-A { background: rgba(78, 201, 176, 0.2); color: #4ec9b0; }
+  .badge-M { background: rgba(206, 145, 120, 0.2); color: #ce9178; }
+  .badge-D { background: rgba(244, 71, 71, 0.2); color: #f44747; }
+
+  /* ── Shimmer Loading ── */
+  .shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Syncing View -->
+<div id="syncing-view">
+  <span class="hero-icon">⏳</span>
+  <h2 class="hero-title">Syncing Engine...</h2>
+  <div class="shimmer" style="height: 10px; border-radius: 5px; margin: 20px 0;"></div>
+  <div class="shimmer" style="height: 60px; border-radius: 8px;"></div>
+</div>
+
+<!-- No Repo View -->
+<div id="no-repo-view">
+  <span class="hero-icon">🚀</span>
+  <h2 class="hero-title">Welcome to GitPilot</h2>
+  <p class="hero-desc">Automate your workflow. Open a Git repository to begin your journey with smart commits and auto-pushed logic.</p>
+  <button class="btn-main" onclick="vscode.postMessage({type:'openFolder'})" style="padding: 12px 24px;">Open Folder</button>
+</div>
+
+<!-- Main View -->
+<div id="main-view">
+  <header class="header">
+    <div class="brand-group">
+      <div class="logo">G</div>
+      <span style="font-weight: 800; font-size: 15px; letter-spacing: -0.5px;">GitPilot</span>
+    </div>
+    <div class="branch-pill">
+      <span id="branch-name">main</span>
+    </div>
+  </header>
+
+  <!-- Status Section -->
+  <section class="card glass">
+    <div class="card-title">Realtime Status</div>
+    <div class="status-grid">
+      <div class="stat-box">
+        <div class="stat-label">Repository</div>
+        <div class="stat-value" id="status-text">Clean</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Remote</div>
+        <div class="stat-value" id="remote-text">In sync</div>
+      </div>
+    </div>
+    
+    <div id="timer-wrap">
+      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--fg-muted); margin-bottom:4px;">
+        <span>Next auto-commit:</span>
+        <span id="countdown">30s</span>
+      </div>
+      <div class="progress-bg"><div id="progress-bar"></div></div>
+    </div>
+  </section>
+
+  <!-- Automation Controls -->
+  <section>
+    <div class="card-title">Automation Engine</div>
+    <div class="toggle-row glass" id="toggle-auto-commit" role="switch" aria-checked="false" aria-label="Toggle Auto Commit" tabindex="0">
+      <div class="toggle-label-grp">
+        <div class="toggle-name">Auto-Commit</div>
+        <div class="toggle-desc">Saves work after inactivity</div>
+      </div>
+      <div class="switch"></div>
+    </div>
+    <div class="toggle-row glass" id="toggle-auto-push" role="switch" aria-checked="false" aria-label="Toggle Auto Push" tabindex="0">
+      <div class="toggle-label-grp">
+        <div class="toggle-name">Auto-Push</div>
+        <div class="toggle-desc">Instantly syncs to remote</div>
+      </div>
+      <div class="switch"></div>
+    </div>
+  </section>
+
+  <!-- Action Section -->
+  <section class="card glass">
+    <div class="card-title">
+      Manual Override
+      <span style="color:var(--brand); font-size:9px; cursor:pointer" id="style-selector">CONVENTIONAL</span>
+    </div>
+    <div class="commit-container">
+      <textarea id="commit-msg" placeholder="Tell the pilot what you're doing..."></textarea>
+      <div class="btn-grp">
+        <button class="btn-main" id="commit-btn" onclick="api.commit(false)">Commit</button>
+        <button class="btn-ghost" id="push-btn" onclick="api.commit(true)">Push</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- File List Section -->
+  <section id="files-section" style="display:none">
+    <div class="card-title">Pending Changes</div>
+    <div class="file-list" id="file-list"></div>
+  </section>
+</div>
+
+<script>
+  const vscode = acquireVsCodeApi();
+  
+  const api = {
+    commit: (push) => {
+      const msg = document.getElementById('commit-msg').value;
+      vscode.postMessage({ type: 'commit', andPush: push, message: msg });
+    },
+    toggle: (id) => {
+      const el = document.getElementById(id);
+      const active = !el.classList.contains('toggle-active');
+      el.classList.toggle('toggle-active', active);
+      el.setAttribute('aria-checked', active);
+      vscode.postMessage({ type: id.replace('toggle-', 'toggleAuto').replace('commit', 'Commit').replace('push', 'Push'), value: active });
+    }
+  };
+
+  // Keyboard support for toggles
+  document.querySelectorAll('.toggle-row').forEach(el => {
+    el.addEventListener('click', () => api.toggle(el.id));
+    el.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        api.toggle(el.id);
+      }
+    });
+  });
+
+  window.addEventListener('message', ({ data }) => {
+    const { type, ...state } = data;
+    if (type === 'update') render(state);
+    if (type === 'timerTick') updateTimer(data);
+  });
+
+  function render(s) {
+    if (!s.branch || s.branch === 'no-repo') {
+      document.getElementById('no-repo-view').style.display = 'block';
+      document.getElementById('main-view').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('no-repo-view').style.display = 'none';
+    document.getElementById('main-view').style.display = 'flex';
+
+    document.getElementById('branch-name').innerText = s.branch;
+    document.getElementById('status-text').innerText = s.hasChanges ? 'Modified' : 'Clean';
+    document.getElementById('status-text').style.color = s.hasChanges ? 'var(--warning)' : 'var(--success)';
+    
+    document.getElementById('remote-text').innerText = s.ahead > 0 ? `${s.ahead} ahead` : 'In Sync';
+    document.getElementById('remote-text').style.color = s.ahead > 0 ? 'var(--brand)' : 'var(--fg-muted)';
+
+    document.getElementById('toggle-auto-commit').classList.toggle('toggle-active', s.autoCommit);
+    document.getElementById('toggle-auto-push').classList.toggle('toggle-active', s.autoPush);
+    
+    const msgArea = document.getElementById('commit-msg');
+    if (s.suggestedMessage && !msgArea.value) {
+      msgArea.value = s.suggestedMessage;
+    }
+
+    // Files
+    const filesSection = document.getElementById('files-section');
+    const fileList = document.getElementById('file-list');
+    if (s.changeSummary && s.changeSummary.files.length > 0) {
+      filesSection.style.display = 'block';
+      fileList.innerHTML = s.changeSummary.files.map(f => {
+        let badgeClass = 'badge-M', label = 'M';
+        if (s.changeSummary.added.includes(f)) { badgeClass = 'badge-A'; label = 'A'; }
+        if (s.changeSummary.deleted.includes(f)) { badgeClass = 'badge-D'; label = 'D'; }
+        return `<div class="file-item"><span class="file-badge ${badgeClass}">${label}</span><span>${f}</span></div>`;
+      }).join('');
+    } else {
+      filesSection.style.display = 'none';
+    }
+
+    // Timer visibility
+    document.getElementById('timer-wrap').style.display = (s.autoCommit && s.hasChanges) ? 'block' : 'none';
+  }
+
+  function updateTimer({ remaining, total }) {
+    document.getElementById('countdown').innerText = `${remaining}s`;
+    const pct = ((total - remaining) / total) * 100;
+    document.getElementById('progress-bar').style.width = `${pct}%`;
+  }
+</script>
+</body>
+</html>
