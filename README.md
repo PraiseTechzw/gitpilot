@@ -58,6 +58,18 @@ cd gitpilot
 npm link
 ```
 
+### npm package
+
+```bash
+npm install -g @praisetechzw/gitpilot
+```
+
+To publish a new version after bumping `version` in [package.json](package.json):
+
+```bash
+npm run publish
+```
+
 ### What you need
 
 - VS Code 1.74 or newer
