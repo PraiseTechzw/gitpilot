@@ -1,5 +1,5 @@
 {
-  "name": "@praisetechzw/gitpilot",
+  "name": "gitpilot",
   "displayName": "GitPilot — Auto Git",
   "description": "Automate your entire Git workflow: smart commit messages, auto-commit on save, auto-push, and a full CLI.",
   "version": "1.0.0",
@@ -20,9 +20,6 @@
   "homepage": "https://github.com/PraiseTechzw/gitpilot#readme",
   "bugs": {
     "url": "https://github.com/PraiseTechzw/gitpilot/issues"
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "files": [
     "src/**",
@@ -69,7 +66,7 @@
         {
           "id": "gitpilot-container",
           "title": "GitPilot",
-          "icon": "$(source-control)"
+          "icon": "icon.png"
         }
       ]
     },
@@ -78,7 +75,8 @@
         {
           "type": "webview",
           "id": "gitpilot.panel",
-          "name": "GitPilot"
+          "name": "GitPilot",
+          "icon": "icon.png"
         }
       ]
     },
@@ -140,15 +138,11 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run lint",
-    "prepublishOnly": "npm run lint",
     "lint": "echo 'lint ok'",
     "package": "vsce package",
-    "publish": "npm publish --access public",
     "install-cli": "npm link"
   },
-  "dependencies": {
-    "micromatch": "^4.0.5"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/vscode": "^1.74.0",
     "@vscode/vsce": "^2.19.0"

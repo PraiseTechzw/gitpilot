@@ -1,7 +1,6 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
-const micromatch = require('micromatch');
 
 const gitOps = require('./git/gitOps');
 const { generateMessage, fallbackMessage } = require('./git/commitMessage');
@@ -20,8 +19,7 @@ function activate(context) {
 
   repoRoot = detectRepoRoot();
   if (!repoRoot) {
-    log('No git repository found in workspace.');
-    return;
+    log('No git repository found in workspace yet. UI will stay available.');
   }
 
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -63,6 +61,9 @@ function activate(context) {
   );
 
   const refreshHandle = setInterval(() => {
+    if (!repoRoot) {
+      repoRoot = detectRepoRoot();
+    }
     if (webviewPanel?.visible) sendPanelState();
     updateStatusBar();
   }, 5000);
@@ -95,7 +96,7 @@ function setupFileWatcher(context) {
   fileWatcher?.dispose();
 
   const config = getConfig();
-  if (!config.autoCommit) {
+  if (!config.autoCommit || !repoRoot) {
     clearDebounce();
     return;
   }
@@ -120,7 +121,22 @@ function setupFileWatcher(context) {
 
 function shouldExclude(relPath, patterns) {
   if (!relPath) return true;
-  return micromatch.isMatch(relPath, patterns || []);
+  const normalized = relPath.replace(/\\/g, '/');
+  return (patterns || []).some((pattern) => globMatch(normalized, pattern));
+}
+
+function globMatch(input, pattern) {
+  if (!pattern) return false;
+
+  const normalizedPattern = pattern.replace(/\\/g, '/');
+  const escaped = normalizedPattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*\*/g, '__DOUBLE_STAR__')
+    .replace(/\*/g, '[^/]*')
+    .replace(/__DOUBLE_STAR__/g, '.*')
+    .replace(/\?/g, '.');
+
+  return new RegExp(`^${escaped}$`).test(input);
 }
 
 function scheduleAutoCommit(seconds) {
@@ -242,10 +258,10 @@ async function runUndo() {
 }
 
 function updateStatusBar() {
-  if (!statusBarItem || !repoRoot) return;
+  if (!statusBarItem) return;
 
   const config = getConfig();
-  const branch = gitOps.getCurrentBranch(repoRoot);
+  const branch = repoRoot ? gitOps.getCurrentBranch(repoRoot) : 'no-repo';
   const flags = [
     config.autoCommit ? '$(sync~spin)' : '$(git-commit)',
     config.autoPush ? '$(cloud-upload)' : '',
@@ -256,6 +272,7 @@ function updateStatusBar() {
   statusBarItem.text = `${flags} ${branch}`;
   statusBarItem.tooltip = [
     `GitPilot - ${branch}`,
+    repoRoot ? 'Repository detected' : 'No git repository detected in open workspace',
     `Auto-commit: ${config.autoCommit ? `on (${config.debounceSeconds}s)` : 'off'}`,
     `Auto-push: ${config.autoPush ? 'on' : 'off'}`,
     'Click to open panel',
@@ -303,7 +320,28 @@ function handleWebviewMessage(message) {
 }
 
 function sendPanelState() {
-  if (!webviewPanel || !repoRoot) return;
+  if (!webviewPanel) return;
+
+  if (!repoRoot) {
+    webviewPanel.webview.postMessage({
+      type: 'update',
+      branch: 'no-repo',
+      hasChanges: false,
+      changeSummary: { added: [], modified: [], deleted: [], renamed: [], untracked: [], files: [] },
+      linesAdded: 0,
+      linesRemoved: 0,
+      suggestedMessage: '',
+      recentCommits: [],
+      ahead: 0,
+      behind: 0,
+      remoteUrl: null,
+      autoCommit: false,
+      autoPush: false,
+      debounceSeconds: getConfig().debounceSeconds,
+      commitStyle: getConfig().commitStyle,
+    });
+    return;
+  }
 
   const config = getConfig();
   const hasChanges = gitOps.hasChanges(repoRoot);
