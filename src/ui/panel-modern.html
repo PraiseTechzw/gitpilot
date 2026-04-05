@@ -6,7 +6,6 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';"/>
 <style>
   :root {
-    /* Theme variable mapping with a "Deep Space" flavor */
     --bg: var(--vscode-sideBar-background);
     --fg: var(--vscode-foreground);
     --fg-muted: var(--vscode-descriptionForeground);
@@ -17,16 +16,15 @@
     --input-bg: var(--vscode-input-background);
     --input-fg: var(--vscode-input-foreground);
     --radius-lg: 12px;
-    --radius-sm: 6px;
+    --radius-sm: 8px;
     
-    /* Branding Accent: Electric Cyan (mapped to buttons in dark, tinted in light) */
+    /* Neon Accents */
     --brand: #00ffff;
-    --brand-glow: rgba(0, 255, 255, 0.3);
-    
-    /* State Colors */
-    --success: var(--vscode-testing-iconPassed, #4ec9b0);
-    --warning: var(--vscode-testing-iconQueued, #ce9178);
-    --error: var(--vscode-testing-iconFailed, #f44747);
+    --brand-glow: rgba(0, 255, 255, 0.4);
+    --success: #4ec9b0;
+    --warning: #ce9178;
+    --error: #f44747;
+    --purple: #bb86fc;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,384 +34,425 @@
     font-size: 13px;
     background: var(--bg);
     color: var(--fg);
-    padding: 16px;
+    padding: 0;
     user-select: none;
     line-height: 1.4;
-    overflow-x: hidden;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
 
-  /* ── Glassmorphism Core ── */
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 8px;
+  }
+  .tab {
+    padding: 10px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tab:hover { color: var(--fg); }
+  .tab.active {
+    color: var(--brand);
+    border-bottom-color: var(--brand);
+  }
+
+  .content-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .view { display: none; flex-direction: column; gap: 16px; }
+  .view.active { display: flex; }
+
+  /* ── Glassmorphism ── */
   .glass {
     background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-lg);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    transition: transform 0.2s, background 0.2s;
-  }
-  
-  /* High Contrast Support */
-  @media (forced-colors: active) {
-    .glass { border: 1px solid CanvasText; }
+    padding: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
   }
 
-  /* ── Layout States ── */
-  #main-view { display: none; flex-direction: column; gap: 16px; }
-  #no-repo-view { display: none; text-align: center; padding: 40px 20px; }
-  #syncing-view { display: none; text-align: center; padding: 40px 20px; }
-
-  /* ── Hero Sections ── */
-  .hero-icon { 
-    width: 60px; height: 60px; 
-    margin: 0 auto 16px; 
-    display: flex; align-items: center; justify-content: center;
-    color: var(--brand);
-    filter: drop-shadow(0 0 15px var(--brand-glow)); 
-  }
-  .hero-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-  .hero-desc { color: var(--fg-muted); font-size: 13px; margin-bottom: 24px; padding: 0 10px; }
-
-  /* ── Dashboard Header ── */
+  /* ── Components ── */
   .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 0;
     margin-bottom: 8px;
   }
-  .brand-group { display: flex; align-items: center; gap: 10px; }
-  .logo { 
-    width: 24px; height: 24px; 
-    background: linear-gradient(135deg, #00ffff, #0e639c);
-    border-radius: 6px;
+  .logo-grp { display: flex; align-items: center; gap: 8px; }
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--brand), var(--accent));
+    border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
-    color: white; font-weight: bold; font-size: 14px;
+    color: white; filter: drop-shadow(0 0 8px var(--brand-glow));
   }
+
   .branch-pill {
-    background: var(--input-bg);
-    border: 1px solid var(--border);
+    background: rgba(0,255,255,0.1);
+    border: 1px solid var(--brand);
     padding: 2px 10px;
     border-radius: 20px;
     font-size: 11px;
-    font-family: var(--vscode-editor-font-family, monospace);
+    font-family: monospace;
     color: var(--brand);
     display: flex; align-items: center; gap: 4px;
   }
 
-  /* ── Cards ── */
-  .card { padding: 16px; margin-bottom: 12px; }
-  .card-title {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: var(--fg-muted);
-    margin-bottom: 12px;
-    display: flex;
-    justify-content: space-between;
+  .action-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
   }
-
-  /* ── Status Row ── */
-  .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .stat-box {
-    background: rgba(0,0,0,0.1);
-    padding: 10px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-  }
-  .stat-label { font-size: 10px; color: var(--fg-muted); margin-bottom: 4px; }
-  .stat-value { font-size: 13px; font-weight: 600; }
-
-  /* ── Toggles (Accessible) ── */
-  .toggle-row {
+  .action-btn {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    padding: 12px;
-    background: rgba(0,0,0,0.05);
+    gap: 6px;
+    padding: 8px 4px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    margin-bottom: 8px;
+    color: var(--fg);
     cursor: pointer;
+    transition: 0.2s;
   }
-  .toggle-label-grp { flex: 1; }
-  .toggle-name { font-size: 13px; font-weight: 500; }
-  .toggle-desc { font-size: 11px; color: var(--fg-muted); }
-
-  .switch {
-    width: 32px; height: 18px;
-    background: #444; border-radius: 10px;
-    position: relative; transition: .2s;
-  }
-  .switch::after {
-    content: ''; position: absolute;
-    width: 12px; height: 12px;
-    left: 3px; top: 3px;
-    background: white; border-radius: 50%;
-    transition: .2s;
-  }
-  .toggle-active .switch { background: var(--accent); }
-  .toggle-active .switch::after { transform: translateX(14px); }
+  .action-btn:hover { background: rgba(255,255,255,0.08); border-color: var(--brand); }
+  .action-btn svg { width: 16px; height: 16px; }
+  .action-btn span { font-size: 9px; font-weight: 700; text-transform: uppercase; }
 
   /* ── Commit Area ── */
-  .commit-container { display: flex; flex-direction: column; gap: 8px; }
+  .commit-box { display: flex; flex-direction: column; gap: 8px; }
   textarea {
-    width: 100%; min-height: 80px;
+    width: 100%; min-height: 90px;
     background: var(--input-bg);
     color: var(--input-fg);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    padding: 10px;
-    font-family: inherit;
-    font-size: 12px;
-    resize: none;
-    outline: none;
-  }
-  textarea:focus { border-color: var(--accent); }
-
-  .btn-grp { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  button {
-    padding: 10px; border: none; border-radius: var(--radius-sm);
-    font-weight: 600; cursor: pointer; transition: 0.2s;
+    padding: 12px;
     font-family: inherit; font-size: 12px;
+    resize: none; outline: none;
+    transition: border-color 0.2s;
   }
-  .btn-main { background: var(--accent); color: var(--accent-fg); }
-  .btn-main:hover { background: var(--accent-hover); }
-  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--fg); }
-  .btn-ghost:hover { background: rgba(255,255,255,0.05); }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  textarea:focus { border-color: var(--brand); }
+  
+  .ai-glow {
+    position: relative;
+    overflow: hidden;
+  }
+  .ai-glow::after {
+    content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(0,255,255,0.1) 0%, transparent 70%);
+    pointer-events: none; opacity: 0; transition: 0.5s;
+  }
+  .is-generating .ai-glow::after { opacity: 1; animation: rotateGlow 3s linear infinite; }
+  @keyframes rotateGlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-  /* ── Progress Bar ── */
-  #timer-wrap { display: none; margin-top: 12px; }
-  .progress-bg { height: 6px; background: rgba(0,0,0,0.2); border-radius: 3px; overflow: hidden; margin-top: 4px; }
-  #progress-bar { height: 100%; background: var(--brand); width: 0%; transition: width 1s linear; }
+  .btn-primary {
+    background: var(--accent); color: var(--accent-fg);
+    border: none; padding: 10px; border-radius: var(--radius-sm);
+    font-weight: 700; cursor: pointer; transition: 0.2s; width: 100%;
+  }
+  .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 12px var(--brand-glow); }
 
-  /* ── File List ── */
-  .file-list { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
-  .file-item {
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 8px; background: rgba(255,255,255,0.02);
-    border-radius: 4px; font-size: 11px;
+  /* ── Branch List ── */
+  .list-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    margin-bottom: 6px; cursor: pointer; transition: 0.2s;
   }
-  .file-badge {
-    padding: 1px 5px; border-radius: 3px; font-weight: 700; font-size: 9px;
-  }
-  .badge-A { background: rgba(78, 201, 176, 0.2); color: #4ec9b0; }
-  .badge-M { background: rgba(206, 145, 120, 0.2); color: #ce9178; }
-  .badge-D { background: rgba(244, 71, 71, 0.2); color: #f44747; }
+  .list-item:hover { background: rgba(255,255,255,0.08); border-color: var(--brand); }
+  .list-item.current { border-color: var(--brand); background: rgba(0,255,255,0.05); }
+  .branch-info { display: flex; align-items: center; gap: 10px; }
+  .remote-badge { font-size: 9px; padding: 1px 4px; background: var(--purple); color: black; border-radius: 4px; font-weight: 800; }
 
-  /* ── Shimmer Loading ── */
-  .shimmer {
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+  /* ── History Timeline ── */
+  .timeline { position: relative; padding-left: 20px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 4px; top: 0; bottom: 0;
+    width: 2px; background: var(--border);
   }
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+  .event { position: relative; margin-bottom: 16px; }
+  .event::before {
+    content: ''; position: absolute; left: -20px; top: 4px;
+    width: 10px; height: 10px; background: var(--bg);
+    border: 2px solid var(--brand); border-radius: 50%;
   }
+  .event-msg { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
+  .event-meta { font-size: 10px; color: var(--fg-muted); display: flex; gap: 8px; }
 
-  @media (prefers-reduced-motion: reduce) {
-    * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  /* ── Config Form ── */
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 11px; font-weight: 700; color: var(--fg-muted); margin-bottom: 8px; text-transform: uppercase; }
+  .input-text {
+    width: 100%; padding: 8px 12px; background: var(--input-bg); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--fg); font-size: 12px; outline: none;
   }
+  .input-text:focus { border-color: var(--brand); }
+
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px; background: rgba(0,0,0,0.1); border-radius: var(--radius-sm);
+    cursor: pointer; transition: 0.2s;
+  }
+  .toggle-row:hover { background: rgba(255,255,255,0.03); }
+  .switch {
+    width: 32px; height: 18px; background: #444; border-radius: 10px;
+    position: relative; transition: .2s;
+  }
+  .switch::after {
+    content: ''; position: absolute; width: 12px; height: 12px;
+    left: 3px; top: 3px; background: white; border-radius: 50%; transition: .2s;
+  }
+  .active .switch { background: var(--brand); }
+  .active .switch::after { transform: translateX(14px); }
+
+  /* ── Utility ── */
+  .section-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--fg-muted); margin-bottom: 8px; letter-spacing: 1px; }
+  .badge { padding: 1px 5px; border-radius: 3px; font-weight: 700; font-size: 9px; }
+  .badge-A { background: rgba(78,201,176,0.2); color: var(--success); }
+  .badge-M { background: rgba(206,145,120,0.2); color: var(--warning); }
+  .badge-D { background: rgba(244,71,71,0.2); color: var(--error); }
+
+  #no-repo-view { display: none; text-align: center; padding: 60px 20px; }
 </style>
 </head>
 <body>
 
-<!-- Syncing View -->
-<div id="syncing-view">
-  <div class="hero-icon">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83">
-        <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="2s" repeatCount="indefinite"/>
-      </path>
-    </svg>
-  </div>
-  <h2 class="hero-title">Syncing Engine...</h2>
-  <div class="shimmer" style="height: 10px; border-radius: 5px; margin: 20px 0;"></div>
-  <div class="shimmer" style="height: 60px; border-radius: 8px;"></div>
+<div class="tabs" id="tab-bar">
+  <div class="tab active" onclick="showView('workspace')">Workspace</div>
+  <div class="tab" onclick="showView('branching')">Branching</div>
+  <div class="tab" onclick="showView('history')">History</div>
+  <div class="tab" id="config-tab-btn" onclick="showView('config')">Config</div>
 </div>
 
-<!-- No Repo View -->
-<div id="no-repo-view">
-  <div class="hero-icon">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path>
-      <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path>
-      <path d="M9 12H4s.55-3.03 2-5c1.62-2.2 5-3 5-3"></path>
-      <path d="M12 15v5s3.03-.55 5-2c2.2-1.62 3-5 3-5"></path>
-    </svg>
+<div class="content-area">
+  <!-- View: Workspace -->
+  <div id="view-workspace" class="view active">
+    <header class="header">
+      <div class="logo-grp">
+        <div class="logo-icon">🚀</div>
+        <span style="font-weight: 800; font-size: 15px;">GitPilot</span>
+      </div>
+      <div class="branch-pill">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9h-3a4 4 0 0 0-4 4v3"></path></svg>
+        <span id="branch-name">main</span>
+      </div>
+    </header>
+
+    <div class="action-bar">
+      <div class="action-btn" onclick="vscode.postMessage({type:'fetch'})">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+        <span>Fetch</span>
+      </div>
+      <div class="action-btn" onclick="vscode.postMessage({type:'pull'})">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17V3m-5 9l5 5 5-5M12 21h9M3 21h3"></path></svg>
+        <span>Pull</span>
+      </div>
+      <div class="action-btn" onclick="api.commit(true)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v14m5-5l-5 5-5-5M3 21h18"></path></svg>
+        <span>Push</span>
+      </div>
+      <div class="action-btn" onclick="vscode.postMessage({type:'undo'})">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a5 5 0 0 1 0 10H3M3 10l5-5m-5 5l5 5"></path></svg>
+        <span>Undo</span>
+      </div>
+    </div>
+
+    <div class="commit-box glass ai-glow" id="ai-container">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="section-title">Smart Commit</span>
+        <span id="ai-status" style="font-size:9px; font-weight:800; color:var(--brand); display:none">AI ACTIVE</span>
+      </div>
+      <textarea id="commit-msg" placeholder="Summarize your changes..."></textarea>
+      <button class="btn-primary" onclick="api.commit(false)">Commit Changes</button>
+    </div>
+
+    <div id="changes-section" style="display:none">
+      <span class="section-title" id="changes-title">Pending Changes</span>
+      <div id="file-list" style="margin-top:8px"></div>
+    </div>
   </div>
-  <h2 class="hero-title">Welcome to GitPilot</h2>
-  <p class="hero-desc">Automate your workflow. Open a Git repository to begin your journey with smart commits and auto-pushed logic.</p>
-  <button class="btn-main" onclick="vscode.postMessage({type:'openFolder'})" style="padding: 12px 24px;">Open Folder</button>
-</div>
 
-<!-- Main View -->
-<div id="main-view">
-  <header class="header">
-    <div class="brand-group">
-      <div class="logo">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path>
-          <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path>
-          <path d="M9 12H4s.55-3.03 2-5c1.62-2.2 5-3 5-3"></path>
-          <path d="M12 15v5s3.03-.55 5-2c2.2-1.62 3-5 3-5"></path>
-        </svg>
-      </div>
-      <span style="font-weight: 800; font-size: 15px; letter-spacing: -0.5px;">GitPilot</span>
-    </div>
-    <div class="branch-pill">
-      <span id="branch-name">main</span>
-    </div>
-  </header>
+  <!-- View: Branching -->
+  <div id="view-branching" class="view">
+    <span class="section-title">Manage Branches</span>
+    <div id="branch-list"></div>
+  </div>
 
-  <!-- Status Section -->
-  <section class="card glass">
-    <div class="card-title">Realtime Status</div>
-    <div class="status-grid">
-      <div class="stat-box">
-        <div class="stat-label">Repository</div>
-        <div class="stat-value" id="status-text">Clean</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Remote</div>
-        <div class="stat-value" id="remote-text">In sync</div>
-      </div>
-    </div>
+  <!-- View: History -->
+  <div id="view-history" class="view">
+    <span class="section-title">Recent Activity</span>
+    <div class="timeline" id="commit-history"></div>
+  </div>
+
+  <!-- View: Config -->
+  <div id="view-config" class="view">
+    <span class="section-title">AI Settings</span>
     
-    <div id="timer-wrap">
-      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--fg-muted); margin-bottom:4px;">
-        <span>Next auto-commit:</span>
-        <span id="countdown">30s</span>
-      </div>
-      <div class="progress-bg"><div id="progress-bar"></div></div>
+    <div class="form-group">
+      <label class="form-label">Google Gemini API Key</label>
+      <input type="password" id="api-key-input" class="input-text" placeholder="Paste your API key here..." onchange="api.updateSetting('googleApiKey', this.value)">
+      <p style="font-size:10px; color:var(--fg-muted); margin-top:6px">Get one at <a href="https://aistudio.google.com/" style="color:var(--brand)">aistudio.google.com</a></p>
     </div>
-  </section>
 
-  <!-- Automation Controls -->
-  <section>
-    <div class="card-title">Automation Engine</div>
-    <div class="toggle-row glass" id="toggle-auto-commit" role="switch" aria-checked="false" aria-label="Toggle Auto Commit" tabindex="0">
-      <div class="toggle-label-grp">
-        <div class="toggle-name">Auto-Commit</div>
-        <div class="toggle-desc">Saves work after inactivity</div>
+    <div class="toggle-row" id="toggle-use-ai" onclick="api.toggleSetting('useAi')">
+      <div>
+        <div style="font-size:13px; font-weight:600">Enable AI Messages</div>
+        <div style="font-size:10px; color:var(--fg-muted)">Use Gemini for smart commits</div>
       </div>
       <div class="switch"></div>
     </div>
-    <div class="toggle-row glass" id="toggle-auto-push" role="switch" aria-checked="false" aria-label="Toggle Auto Push" tabindex="0">
-      <div class="toggle-label-grp">
-        <div class="toggle-name">Auto-Push</div>
-        <div class="toggle-desc">Instantly syncs to remote</div>
-      </div>
-      <div class="switch"></div>
-    </div>
-  </section>
 
-  <!-- Action Section -->
-  <section class="card glass">
-    <div class="card-title">
-      Manual Override
-      <span style="color:var(--brand); font-size:9px; cursor:pointer" id="style-selector">CONVENTIONAL</span>
-    </div>
-    <div class="commit-container">
-      <textarea id="commit-msg" placeholder="Tell the pilot what you're doing..."></textarea>
-      <div class="btn-grp">
-        <button class="btn-main" id="commit-btn" onclick="api.commit(false)">Commit</button>
-        <button class="btn-ghost" id="push-btn" onclick="api.commit(true)">Push</button>
+    <div style="margin-top:24px">
+      <span class="section-title">Automation Engine</span>
+      <div class="toggle-row" id="toggle-auto-commit" onclick="api.toggleSetting('autoCommit')" style="margin-bottom:8px">
+        <div>
+          <div style="font-size:12px; font-weight:600">Auto-Commit</div>
+          <div style="font-size:10px; color:var(--fg-muted)">Commit after inactivity</div>
+        </div>
+        <div class="switch"></div>
+      </div>
+      <div class="toggle-row" id="toggle-auto-push" onclick="api.toggleSetting('autoPush')">
+        <div>
+          <div style="font-size:12px; font-weight:600">Auto-Push</div>
+          <div style="font-size:10px; color:var(--fg-muted)">Push after each commit</div>
+        </div>
+        <div class="switch"></div>
       </div>
     </div>
-  </section>
+  </div>
+</div>
 
-  <!-- File List Section -->
-  <section id="files-section" style="display:none">
-    <div class="card-title">Pending Changes</div>
-    <div class="file-list" id="file-list"></div>
-  </section>
+<div id="no-repo-view">
+  <div style="font-size: 40px; margin-bottom: 20px;">🛸</div>
+  <h2 style="font-weight:800; margin-bottom:10px">No Git Repository</h2>
+  <p style="color:var(--fg-muted); font-size:13px; margin-bottom:24px">Open a folder with a Git repository to start using the Pilot.</p>
+  <button class="btn-primary" onclick="vscode.postMessage({type:'openFolder'})" style="padding: 12px 24px; width:auto">Open Project</button>
 </div>
 
 <script>
   const vscode = acquireVsCodeApi();
-  
+  let currentState = {};
+
   const api = {
     commit: (push) => {
       const msg = document.getElementById('commit-msg').value;
       vscode.postMessage({ type: 'commit', andPush: push, message: msg });
     },
-    toggle: (id) => {
-      const el = document.getElementById(id);
-      const active = !el.classList.contains('toggle-active');
-      el.classList.toggle('toggle-active', active);
-      el.setAttribute('aria-checked', active);
-      vscode.postMessage({ type: id.replace('toggle-', 'toggleAuto').replace('commit', 'Commit').replace('push', 'Push'), value: active });
+    updateSetting: (key, value) => {
+      vscode.postMessage({ type: 'updateSetting', key, value });
+    },
+    toggleSetting: (key) => {
+      const val = !currentState[key];
+      vscode.postMessage({ type: 'updateSetting', key, value: val });
+    },
+    checkout: (name) => {
+      vscode.postMessage({ type: 'checkout', branch: name });
     }
   };
 
-  // Keyboard support for toggles
-  document.querySelectorAll('.toggle-row').forEach(el => {
-    el.addEventListener('click', () => api.toggle(el.id));
-    el.addEventListener('keydown', (e) => {
-      if (e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault();
-        api.toggle(el.id);
-      }
-    });
-  });
+  function showView(id) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    
+    const targetTab = Array.from(document.querySelectorAll('.tab')).find(t => t.innerText.toLowerCase() === id);
+    if (targetTab) targetTab.classList.add('active');
+    document.getElementById(`view-${id}`).classList.add('active');
+  }
 
   window.addEventListener('message', ({ data }) => {
-    const { type, ...state } = data;
-    if (type === 'update') render(state);
-    if (type === 'timerTick') updateTimer(data);
+    if (data.type === 'update') render(data);
   });
 
   function render(s) {
+    currentState = s;
     if (!s.branch || s.branch === 'no-repo') {
       document.getElementById('no-repo-view').style.display = 'block';
-      document.getElementById('main-view').style.display = 'none';
+      document.getElementById('tab-bar').style.display = 'none';
+      document.querySelector('.content-area').style.display = 'none';
       return;
     }
 
     document.getElementById('no-repo-view').style.display = 'none';
-    document.getElementById('main-view').style.display = 'flex';
+    document.getElementById('tab-bar').style.display = 'flex';
+    document.querySelector('.content-area').style.display = 'flex';
 
     document.getElementById('branch-name').innerText = s.branch;
-    document.getElementById('status-text').innerText = s.hasChanges ? 'Modified' : 'Clean';
-    document.getElementById('status-text').style.color = s.hasChanges ? 'var(--warning)' : 'var(--success)';
     
-    document.getElementById('remote-text').innerText = s.ahead > 0 ? `${s.ahead} ahead` : 'In Sync';
-    document.getElementById('remote-text').style.color = s.ahead > 0 ? 'var(--brand)' : 'var(--fg-muted)';
-
-    document.getElementById('toggle-auto-commit').classList.toggle('toggle-active', s.autoCommit);
-    document.getElementById('toggle-auto-push').classList.toggle('toggle-active', s.autoPush);
-    
+    // AI Status
+    document.getElementById('ai-status').style.display = s.useAi ? 'block' : 'none';
     const msgArea = document.getElementById('commit-msg');
-    if (s.suggestedMessage && !msgArea.value) {
-      msgArea.value = s.suggestedMessage;
-    }
+    if (s.suggestedMessage && !msgArea.value) msgArea.value = s.suggestedMessage;
 
-    // Files
-    const filesSection = document.getElementById('files-section');
-    const fileList = document.getElementById('file-list');
+    // Changes
+    const changesSec = document.getElementById('changes-section');
     if (s.changeSummary && s.changeSummary.files.length > 0) {
-      filesSection.style.display = 'block';
-      fileList.innerHTML = s.changeSummary.files.map(f => {
-        let badgeClass = 'badge-M', label = 'M';
-        if (s.changeSummary.added.includes(f)) { badgeClass = 'badge-A'; label = 'A'; }
-        if (s.changeSummary.deleted.includes(f)) { badgeClass = 'badge-D'; label = 'D'; }
-        return `<div class="file-item"><span class="file-badge ${badgeClass}">${label}</span><span>${f}</span></div>`;
+      changesSec.style.display = 'block';
+      document.getElementById('changes-title').innerText = `${s.changeSummary.files.length} PENDING CHANGES`;
+      document.getElementById('file-list').innerHTML = s.changeSummary.files.map(f => {
+        let bClass = 'badge-M', label = 'M';
+        if (s.changeSummary.added.includes(f)) { bClass = 'badge-A'; label = 'A'; }
+        if (s.changeSummary.deleted.includes(f)) { bClass = 'badge-D'; label = 'D'; }
+        return `<div style="display:flex; gap:8px; align-items:center; margin-bottom:4px; font-size:11px">
+          <span class="badge ${bClass}">${label}</span>
+          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${f}</span>
+        </div>`;
       }).join('');
     } else {
-      filesSection.style.display = 'none';
+      changesSec.style.display = 'none';
     }
 
-    // Timer visibility
-    document.getElementById('timer-wrap').style.display = (s.autoCommit && s.hasChanges) ? 'block' : 'none';
-  }
+    // Branching
+    document.getElementById('branch-list').innerHTML = (s.branches || []).map(b => `
+      <div class="list-item ${b.name === s.branch ? 'current' : ''}" onclick="api.checkout('${b.name}')">
+        <div class="branch-info">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9h-3a4 4 0 0 0-4 4v3"></path></svg>
+          <span style="font-weight:600">${b.name}</span>
+          ${b.isRemote ? '<span class="remote-badge">REMOTE</span>' : ''}
+        </div>
+        ${b.name === s.branch ? '<span style="color:var(--brand)">●</span>' : ''}
+      </div>
+    `).join('');
 
-  function updateTimer({ remaining, total }) {
-    document.getElementById('countdown').innerText = `${remaining}s`;
-    const pct = ((total - remaining) / total) * 100;
-    document.getElementById('progress-bar').style.width = `${pct}%`;
+    // History
+    document.getElementById('commit-history').innerHTML = (s.recentCommits || []).map(c => `
+      <div class="event">
+        <div class="event-msg">${c.message}</div>
+        <div class="event-meta">
+          <span style="color:var(--brand)">${c.hash}</span>
+          <span>${c.date}</span>
+        </div>
+      </div>
+    `).join('');
+
+    // Config
+    document.getElementById('toggle-use-ai').classList.toggle('active', s.useAi);
+    document.getElementById('toggle-auto-commit').classList.toggle('active', s.autoCommit);
+    document.getElementById('toggle-auto-push').classList.toggle('active', s.autoPush);
+    
+    const keyInput = document.getElementById('api-key-input');
+    if (s.googleApiKey && !keyInput.value) {
+      keyInput.value = s.googleApiKey;
+    }
   }
 </script>
 </body>
