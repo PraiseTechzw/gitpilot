@@ -64,9 +64,15 @@
   #syncing-view { display: none; text-align: center; padding: 40px 20px; }
 
   /* ── Hero Sections ── */
-  .hero-icon { font-size: 48px; margin-bottom: 16px; display: block; filter: drop-shadow(0 0 10px var(--brand-glow)); }
+  .hero-icon { 
+    width: 60px; height: 60px; 
+    margin: 0 auto 16px; 
+    display: flex; align-items: center; justify-content: center;
+    color: var(--brand);
+    filter: drop-shadow(0 0 15px var(--brand-glow)); 
+  }
   .hero-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-  .hero-desc { color: var(--fg-muted); font-size: 12px; margin-bottom: 24px; }
+  .hero-desc { color: var(--fg-muted); font-size: 13px; margin-bottom: 24px; padding: 0 10px; }
 
   /* ── Dashboard Header ── */
   .header {
@@ -216,7 +222,13 @@
 
 <!-- Syncing View -->
 <div id="syncing-view">
-  <span class="hero-icon">⏳</span>
+  <div class="hero-icon">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83">
+        <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="2s" repeatCount="indefinite"/>
+      </path>
+    </svg>
+  </div>
   <h2 class="hero-title">Syncing Engine...</h2>
   <div class="shimmer" style="height: 10px; border-radius: 5px; margin: 20px 0;"></div>
   <div class="shimmer" style="height: 60px; border-radius: 8px;"></div>
@@ -224,7 +236,14 @@
 
 <!-- No Repo View -->
 <div id="no-repo-view">
-  <span class="hero-icon">🚀</span>
+  <div class="hero-icon">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path>
+      <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path>
+      <path d="M9 12H4s.55-3.03 2-5c1.62-2.2 5-3 5-3"></path>
+      <path d="M12 15v5s3.03-.55 5-2c2.2-1.62 3-5 3-5"></path>
+    </svg>
+  </div>
   <h2 class="hero-title">Welcome to GitPilot</h2>
   <p class="hero-desc">Automate your workflow. Open a Git repository to begin your journey with smart commits and auto-pushed logic.</p>
   <button class="btn-main" onclick="vscode.postMessage({type:'openFolder'})" style="padding: 12px 24px;">Open Folder</button>
