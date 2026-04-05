@@ -228,9 +228,49 @@
   /* ── Utility ── */
   .section-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--fg-muted); margin-bottom: 8px; letter-spacing: 1px; }
   .badge { padding: 1px 5px; border-radius: 3px; font-weight: 700; font-size: 9px; }
-  .badge-A { background: rgba(78,201,176,0.2); color: var(--success); }
-  .badge-M { background: rgba(206,145,120,0.2); color: var(--warning); }
-  .badge-D { background: rgba(244,71,71,0.2); color: var(--error); }
+  .badge-A { background: rgba(78,201,176,0.2); color: var(--success); box-shadow: 0 0 5px rgba(78,201,176,0.1); animation: badgePulseA 4s infinite; }
+  .badge-M { background: rgba(206,145,120,0.2); color: var(--warning); box-shadow: 0 0 5px rgba(206,145,120,0.1); animation: badgePulseM 4s infinite 1s; }
+  .badge-D { background: rgba(244,71,71,0.2); color: var(--error); box-shadow: 0 0 5px rgba(244,71,71,0.1); animation: badgePulseD 4s infinite 2s; }
+
+  @keyframes badgePulseA { 0%, 100% { box-shadow: 0 0 5px rgba(78,201,176,0.2); } 50% { box-shadow: 0 0 15px rgba(78,201,176,0.6); } }
+  @keyframes badgePulseM { 0%, 100% { box-shadow: 0 0 5px rgba(206,145,120,0.2); } 50% { box-shadow: 0 0 15px rgba(206,145,120,0.6); } }
+  @keyframes badgePulseD { 0%, 100% { box-shadow: 0 0 5px rgba(244,71,71,0.2); } 50% { box-shadow: 0 0 15px rgba(244,71,71,0.6); } }
+
+  /* ── Animations ── */
+  @keyframes levitate {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-4px) rotate(-2deg); }
+    75% { transform: translateY(2px) rotate(2deg); }
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-150%) skewX(-20deg); }
+    100% { transform: translateX(150%) skewX(-20deg); }
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-12px); filter: blur(4px); }
+    to { opacity: 1; transform: translateX(0); filter: blur(0); }
+  }
+
+  .logo-icon { animation: levitate 5s ease-in-out infinite; }
+
+  .shimmer-wrapper {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 40%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    animation: shimmer 6s infinite linear;
+    pointer-events: none;
+  }
+
+  .file-entry {
+    animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
 
   #no-repo-view { display: none; text-align: center; padding: 60px 20px; }
 </style>
@@ -277,7 +317,7 @@
       </div>
     </div>
 
-    <div class="commit-box glass ai-glow" id="ai-container">
+    <div class="commit-box glass ai-glow shimmer-wrapper" id="ai-container">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <span class="section-title">Smart Commit</span>
         <span id="ai-status" style="font-size:9px; font-weight:800; color:var(--brand); display:none">AI ACTIVE</span>
@@ -408,11 +448,11 @@
     if (s.changeSummary && s.changeSummary.files.length > 0) {
       changesSec.style.display = 'block';
       document.getElementById('changes-title').innerText = `${s.changeSummary.files.length} PENDING CHANGES`;
-      document.getElementById('file-list').innerHTML = s.changeSummary.files.map(f => {
+      document.getElementById('file-list').innerHTML = s.changeSummary.files.map((f, idx) => {
         let bClass = 'badge-M', label = 'M';
         if (s.changeSummary.added.includes(f)) { bClass = 'badge-A'; label = 'A'; }
         if (s.changeSummary.deleted.includes(f)) { bClass = 'badge-D'; label = 'D'; }
-        return `<div style="display:flex; gap:8px; align-items:center; margin-bottom:4px; font-size:11px">
+        return `<div class="file-entry" style="display:flex; gap:8px; align-items:center; margin-bottom:4px; font-size:11px; animation-delay: ${idx * 0.05}s">
           <span class="badge ${bClass}">${label}</span>
           <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${f}</span>
         </div>`;

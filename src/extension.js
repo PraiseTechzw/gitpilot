@@ -11,6 +11,7 @@ let fileWatcher = null;
 let timerInterval = null;
 let timerRemaining = 0;
 let lastStatusState = 'idle'; // 'idle', 'dirty', 'countdown', 'active', 'error'
+let animationTick = 0; // Fine-grained tick for animations
 let webviewPanel = null;
 let outputChannel = null;
 
@@ -73,9 +74,10 @@ function activate(context) {
     if (!repoRoot) {
       repoRoot = detectRepoRoot();
     }
+    animationTick = (animationTick + 1) % 60; // 500ms * 60 = 30s cycle
     if (webviewPanel?.visible) sendPanelState();
     updateStatusBar();
-  }, 5000);
+  }, 500); // Faster refresh for animations
 
   context.subscriptions.push({ dispose: () => clearInterval(refreshHandle) });
   log('GitPilot ready.');
@@ -153,14 +155,17 @@ function scheduleAutoCommit(seconds) {
   timerRemaining = seconds;
 
   timerInterval = setInterval(() => {
-    timerRemaining -= 1;
+    timerRemaining -= 0.25;
     sendTimerUpdate(timerRemaining, seconds);
-
-    if (timerRemaining > 0) return;
+    
+    if (timerRemaining > 0) {
+      updateStatusBar();
+      return;
+    }
 
     clearDebounce();
     runAutoCommit();
-  }, 1000);
+  }, 250);
 }
 
 function clearDebounce() {
@@ -297,13 +302,21 @@ function updateStatusBar() {
     tooltip = 'GitPilot: No Git repository detected in the current workspace.';
   } else if (timerInterval && timerRemaining > 0) {
     state = 'countdown';
-    icon = '$(sync~spin)';
-    text = `${getProgressBar(timerRemaining, config.debounceSeconds)} ${timerRemaining}s`;
+    // Pulsing icon: cycle between rocket and sync
+    const icons = ['$(rocket)', '$(sync~spin)', '$(rocket)', '$(sync~spin)'];
+    icon = icons[Math.floor(animationTick % 4)];
+    
+    const progressText = getProgressBar(timerRemaining, config.debounceSeconds);
+    const pulseChar = (animationTick % 2 === 0) ? '•' : ' ';
+    text = `${progressText} ${Math.ceil(timerRemaining)}s ${pulseChar}`;
+    
     bgColor = new vscode.ThemeColor('statusBarItem.warningBackground');
-    tooltip = `Auto-committing in ${timerRemaining}s. Click to commit now.`;
+    tooltip = `Auto-committing in ${Math.ceil(timerRemaining)}s. Click to commit now.`;
   } else if (hasChanges) {
     state = 'dirty';
-    icon = '$(rocket)';
+    // Subtle breathing pulse for the rocket
+    const isLit = (animationTick % 4 === 1 || animationTick % 4 === 2);
+    icon = isLit ? '$(rocket)' : '$(rocket~spin)';
     const changeCount = gitOps.getChangeSummary(repoRoot).files.length;
     text = `GitPilot: ${changeCount} change${changeCount > 1 ? 's' : ''}`;
     tooltip = `${changeCount} uncommitted files. Auto-commit active.`;
@@ -319,11 +332,17 @@ function updateStatusBar() {
 }
 
 function getProgressBar(remaining, total) {
-  const size = 5;
-  const progress = Math.min(Math.max((total - remaining) / total, 0), 1);
-  const filledCount = Math.round(progress * size);
-  const emptyCount = size - filledCount;
-  return '[' + '█'.repeat(filledCount) + '░'.repeat(emptyCount) + ']';
+  const size = 8;
+  const progress = Math.min(Math.max((total - remaining) / total, 0), 1) * size;
+  const blocks = ['░', '▏', '▎', '▍', '▌', '▋', '▊', '▉', '█'];
+  
+  let res = '';
+  for (let i = 0; i < size; i++) {
+    const charProgress = Math.min(Math.max(progress - i, 0), 1);
+    const index = Math.floor(charProgress * (blocks.length - 1));
+    res += blocks[index];
+  }
+  return `[${res}]`;
 }
 
 function openPanel() {
