@@ -2,11 +2,22 @@
   "name": "gitpilot",
   "displayName": "GitPilot — Auto Git",
   "description": "Automate your entire Git workflow: smart commit messages, auto-commit on save, auto-push, and a full CLI.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "praisetechzw",
-  "engines": { "vscode": "^1.74.0" },
-  "categories": ["Other", "SCM Providers"],
-  "keywords": ["git", "auto-commit", "auto-push", "commit message", "automation"],
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "SCM Providers"
+  ],
+  "keywords": [
+    "git",
+    "auto-commit",
+    "auto-push",
+    "commit message",
+    "automation"
+  ],
   "author": {
     "name": "PraiseTechzw",
     "url": "https://www.npmjs.com/~praisetechzw"
@@ -29,7 +40,9 @@
     "gitpilot_architecture.svg",
     "icon.png"
   ],
-  "activationEvents": ["onStartupFinished"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./src/extension.js",
   "bin": {
     "gitpilot": "./cli/gitpilot.js"
@@ -100,19 +113,42 @@
         },
         "gitpilot.commitStyle": {
           "type": "string",
-          "enum": ["conventional", "simple", "emoji"],
+          "enum": [
+            "conventional",
+            "simple",
+            "emoji"
+          ],
           "default": "conventional",
           "description": "Style for auto-generated commit messages."
         },
         "gitpilot.excludePatterns": {
           "type": "array",
-          "default": ["*.log", "node_modules/**", ".env"],
+          "default": [
+            "*.log",
+            "node_modules/**",
+            ".env"
+          ],
           "description": "File patterns to exclude from auto-commit tracking."
         },
         "gitpilot.experimentalUI": {
           "type": "boolean",
           "default": true,
           "description": "Enable the modern glassmorphic UI and enhanced status bar badge."
+        },
+        "gitpilot.useAi": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use Google Gemini AI to generate high-quality commit messages."
+        },
+        "gitpilot.googleApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your Google Gemini API Key. Get one at https://aistudio.google.com/."
+        },
+        "gitpilot.aiModel": {
+          "type": "string",
+          "default": "gemini-2.0-flash",
+          "description": "The Gemini model to use for AI commit messages."
         }
       }
     },
@@ -147,7 +183,9 @@
     "package": "vsce package",
     "install-cli": "npm link"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@google/genai": "^1.48.0"
+  },
   "devDependencies": {
     "@types/vscode": "^1.74.0",
     "@vscode/vsce": "^2.19.0"

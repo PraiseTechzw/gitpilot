@@ -175,10 +175,14 @@ async function runAutoCommit() {
   if (!repoRoot || !gitOps.hasChanges(repoRoot)) return;
 
   try {
-    const config = getConfig();
     const summary = gitOps.getChangeSummary(repoRoot);
     const diff = gitOps.getDiff(repoRoot);
-    const message = generateMessage(summary, diff, config.commitStyle);
+    const message = await generateMessage(summary, diff, {
+      style: config.commitStyle,
+      useAi: config.useAi,
+      googleApiKey: config.googleApiKey,
+      aiModel: config.aiModel,
+    });
 
     await gitOps.stageAll(repoRoot);
     await gitOps.commit(repoRoot, message);
@@ -217,7 +221,12 @@ async function runCommit(andPush, customMessage) {
       if (hasChanges) {
         const summary = gitOps.getChangeSummary(repoRoot);
         const diff = gitOps.getDiff(repoRoot);
-        message = generateMessage(summary, diff, config.commitStyle);
+        message = await generateMessage(summary, diff, {
+          style: config.commitStyle,
+          useAi: config.useAi,
+          googleApiKey: config.googleApiKey,
+          aiModel: config.aiModel,
+        });
       } else {
         message = fallbackMessage(config.commitStyle);
       }
@@ -360,7 +369,7 @@ function handleWebviewMessage(message) {
   }
 }
 
-function sendPanelState() {
+async function sendPanelState() {
   if (!webviewPanel) return;
 
   if (!repoRoot) {
@@ -394,7 +403,12 @@ function sendPanelState() {
   const linesAdded = (diff.match(/^\+[^+]/gm) || []).length;
   const linesRemoved = (diff.match(/^-[^-]/gm) || []).length;
   const suggestedMessage = hasChanges
-    ? generateMessage(changeSummary, diff, config.commitStyle)
+    ? await generateMessage(changeSummary, diff, {
+        style: config.commitStyle,
+        useAi: config.useAi,
+        googleApiKey: config.googleApiKey,
+        aiModel: config.aiModel,
+      })
     : '';
 
   const { ahead, behind } = gitOps.getAheadBehind(repoRoot);
@@ -432,6 +446,9 @@ function getConfig() {
     commitStyle: config.get('commitStyle', 'conventional'),
     excludePatterns: config.get('excludePatterns', ['*.log', 'node_modules/**', '.env']),
     experimentalUI: config.get('experimentalUI', true),
+    useAi: config.get('useAi', false),
+    googleApiKey: config.get('googleApiKey', ''),
+    aiModel: config.get('aiModel', 'gemini-2.0-flash'),
   };
 }
 

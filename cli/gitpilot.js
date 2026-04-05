@@ -42,7 +42,7 @@ function printHelp() {
 ${styles.bold('GitPilot CLI')}
 
 Commands:
-  commit [-y] [-m message] [-s conventional|simple|emoji]
+  commit [-y] [-m message] [-s conventional|simple|emoji] [--ai]
   push [-s conventional|simple|emoji]
   status
   log [n]
@@ -60,7 +60,15 @@ async function commitCommand({ yes = false, message = null, style = 'conventiona
 
   const summary = gitOps.getChangeSummary(repoRoot);
   const diff = gitOps.getDiff(repoRoot);
-  let finalMessage = message || generateMessage(summary, diff, style);
+  const useAi = Boolean(flags.ai) || !!process.env.GOOGLE_API_KEY;
+  const googleApiKey = process.env.GOOGLE_API_KEY || null;
+
+  let finalMessage = message || await generateMessage(summary, diff, {
+    style,
+    useAi,
+    googleApiKey,
+    aiModel: flags.model || 'gemini-2.0-flash',
+  });
 
   if (!yes && !message) {
     console.log(`${styles.bold('Suggested message:')} ${styles.green(finalMessage)}`);
