@@ -83,11 +83,19 @@ function detectScope(files) {
 }
 
 function detectType(summary, diffText) {
+  if (summary.added.length > 0 && summary.modified.length === 0) return 'feat';
+  if (summary.deleted.length > 0 && summary.added.length === 0 && summary.modified.length === 0) return 'chore';
+
   for (const file of summary.files) {
     for (const { pattern, type } of PATH_TYPE_MAP) {
       if (pattern.test(file)) return type;
     }
   }
+
+  const diffLower = (diffText || '').toLowerCase().slice(0, 3000);
+  if (BUG_PATTERNS.some((pattern) => pattern.test(diffLower))) return 'fix';
+  if (FEATURE_PATTERNS.some((pattern) => pattern.test(diffLower))) return 'feat';
+  if (REFACTOR_PATTERNS.some((pattern) => pattern.test(diffLower))) return 'refactor';
 
   const extCounts = {};
   for (const file of summary.files) {
@@ -97,15 +105,8 @@ function detectType(summary, diffText) {
     }
   }
 
-  const diffLower = (diffText || '').toLowerCase().slice(0, 3000);
   const addedLines = ((diffText || '').match(/^\+[^+]/gm) || []).length;
   const removedLines = ((diffText || '').match(/^-[^-]/gm) || []).length;
-
-  if (BUG_PATTERNS.some((pattern) => pattern.test(diffLower))) return 'fix';
-  if (REFACTOR_PATTERNS.some((pattern) => pattern.test(diffLower)) && addedLines < removedLines * 1.5) {
-    return 'refactor';
-  }
-  if (FEATURE_PATTERNS.some((pattern) => pattern.test(diffLower))) return 'feat';
 
   if (summary.renamed.length > 0 && summary.modified.length === 0) return 'refactor';
   if (addedLines > 60 && removedLines < 10) return 'feat';
