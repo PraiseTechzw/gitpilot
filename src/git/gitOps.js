@@ -67,6 +67,37 @@ function getCurrentBranch(repoRoot) {
   }
 }
 
+function getBranches(repoRoot) {
+  try {
+    const output = runGit(['branch', '-a', '--no-color'], repoRoot);
+    const branches = output.split('\n')
+      .map(line => line.replace('*', '').trim())
+      .filter(line => line && !line.includes('->'))
+      .map(name => {
+        const isRemote = name.startsWith('remotes/origin/');
+        const cleanName = isRemote ? name.replace('remotes/origin/', '') : name;
+        return { name: cleanName, isRemote };
+      });
+
+    // De-duplicate (remote vs local)
+    const unique = [];
+    const seen = new Set();
+    for (const b of branches) {
+      if (!seen.has(b.name)) {
+        unique.push(b);
+        seen.add(b.name);
+      }
+    }
+    return unique;
+  } catch {
+    return [];
+  }
+}
+
+async function checkoutBranch(repoRoot, branchName) {
+  await runGitAsync(['checkout', branchName], repoRoot);
+}
+
 function hasChanges(repoRoot) {
   return runGit(['status', '--porcelain'], repoRoot).length > 0;
 }
@@ -122,6 +153,15 @@ async function push(repoRoot) {
     }
     throw error;
   }
+}
+
+async function pull(repoRoot) {
+  const branch = getCurrentBranch(repoRoot);
+  await runGitAsync(['pull', 'origin', branch], repoRoot);
+}
+
+async function fetch(repoRoot) {
+  await runGitAsync(['fetch', 'origin'], repoRoot);
 }
 
 /**
@@ -209,13 +249,13 @@ module.exports = {
   runGitAsync,
   isGitRepo,
   getRepoRoot,
-  getCurrentBranch,
-  hasChanges,
-  getDiff,
-  getChangeSummary,
+  getBranches,
+  checkoutBranch,
   stageAll,
   commit,
   push,
+  pull,
+  fetch,
   pushInteractive,
   undoLastCommit,
   getRecentCommits,

@@ -358,6 +358,36 @@ function handleWebviewMessage(message) {
       vscode.workspace.getConfiguration('gitpilot').update('commitStyle', message.value, true);
       sendPanelState();
       break;
+    case 'checkout':
+      if (repoRoot) {
+        gitOps.checkoutBranch(repoRoot, message.branch).then(() => {
+          toast(`Switched to branch: ${message.branch}`);
+          sendPanelState();
+        }).catch(err => toast(err.message, true));
+      }
+      break;
+    case 'pull':
+      if (repoRoot) {
+        gitOps.pull(repoRoot).then(() => {
+          toast('Pulled latest changes.');
+          sendPanelState();
+        }).catch(err => toast(err.message, true));
+      }
+      break;
+    case 'fetch':
+      if (repoRoot) {
+        gitOps.fetch(repoRoot).then(() => {
+          toast('Fetched updates from origin.');
+          sendPanelState();
+        }).catch(err => toast(err.message, true));
+      }
+      break;
+    case 'updateSetting':
+      if (message.key) {
+        vscode.workspace.getConfiguration('gitpilot').update(message.key, message.value, true);
+        toast(`Settings updated.`);
+      }
+      break;
     case 'copyHash':
       if (message.hash) vscode.env.clipboard.writeText(message.hash);
       break;
@@ -412,15 +442,18 @@ async function sendPanelState() {
     : '';
 
   const { ahead, behind } = gitOps.getAheadBehind(repoRoot);
+  const branches = gitOps.getBranches(repoRoot);
+  
   const payload = {
     type: 'update',
     branch: gitOps.getCurrentBranch(repoRoot),
+    branches,
     hasChanges,
     changeSummary,
     linesAdded,
     linesRemoved,
     suggestedMessage,
-    recentCommits: gitOps.getRecentCommits(repoRoot, 8),
+    recentCommits: gitOps.getRecentCommits(repoRoot, 12),
     ahead,
     behind,
     remoteUrl: gitOps.getRemoteUrl(repoRoot),
@@ -428,6 +461,9 @@ async function sendPanelState() {
     autoPush: config.autoPush,
     debounceSeconds: config.debounceSeconds,
     commitStyle: config.commitStyle,
+    useAi: config.useAi,
+    googleApiKey: config.googleApiKey, // Passed for the UI to show partial key/status
+    aiModel: config.aiModel,
   };
 
   webviewPanel.webview.postMessage(payload);
