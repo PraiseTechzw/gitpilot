@@ -183,8 +183,8 @@ async function generateAiMessage(diffText, summary, options) {
   if (!apiKey) return null;
 
   try {
-    const { GoogleGenAI } = require('@google/genai');
-    const genAI = new GoogleGenAI({ apiKey });
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(apiKey);
     const aiModel = genAI.getGenerativeModel({ model });
 
     const prompt = `
@@ -205,7 +205,7 @@ ${diffText.slice(0, 10000)}
     `;
 
     const result = await aiModel.generateContent(prompt);
-    const response = await result.response;
+    const response = result.response;
     const text = response.text().trim().replace(/^`+|`+$/g, '');
     
     // Validate format roughly

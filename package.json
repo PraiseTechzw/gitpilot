@@ -184,7 +184,7 @@
     "install-cli": "npm link"
   },
   "dependencies": {
-    "@google/genai": "^1.48.0"
+    "@google/generative-ai": "^0.21.0"
   },
   "devDependencies": {
     "@types/vscode": "^1.74.0",

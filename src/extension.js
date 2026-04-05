@@ -174,6 +174,7 @@ function clearDebounce() {
 async function runAutoCommit() {
   if (!repoRoot || !gitOps.hasChanges(repoRoot)) return;
 
+  const config = getConfig();
   try {
     const summary = gitOps.getChangeSummary(repoRoot);
     const diff = gitOps.getDiff(repoRoot);
