@@ -2,7 +2,7 @@
   "name": "gitpilot",
   "displayName": "GitPilot — Auto Git",
   "description": "Automate your entire Git workflow: smart commit messages, auto-commit on save, auto-push, and a full CLI.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publisher": "praisetechzw",
   "engines": {
     "vscode": "^1.74.0"
