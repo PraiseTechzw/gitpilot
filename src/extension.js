@@ -53,12 +53,15 @@ function activate(context) {
     }),
   );
 
+  const config = getConfig();
   setupFileWatcher(context);
+  updateStatusBar();
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (!event.affectsConfiguration('gitpilot')) return;
       
+      const newConfig = getConfig();
       // Update HTML if UI experimental mode changed
       if (event.affectsConfiguration('gitpilot.experimentalUI') && webviewPanel) {
         webviewPanel.webview.html = getPanelHtml();
@@ -71,13 +74,15 @@ function activate(context) {
   );
 
   const refreshHandle = setInterval(() => {
-    if (!repoRoot) {
+    // Only detect repo if not found, and less frequently (every 5 seconds)
+    if (!repoRoot && animationTick % 10 === 0) {
       repoRoot = detectRepoRoot();
     }
+    
     animationTick = (animationTick + 1) % 60; // 500ms * 60 = 30s cycle
     if (webviewPanel?.visible) sendPanelState();
     updateStatusBar();
-  }, 500); // Faster refresh for animations
+  }, 500); // 500ms for smooth animations
 
   context.subscriptions.push({ dispose: () => clearInterval(refreshHandle) });
   log('GitPilot ready.');
@@ -104,7 +109,10 @@ function detectRepoRoot() {
 }
 
 function setupFileWatcher(context) {
-  fileWatcher?.dispose();
+  if (fileWatcher) {
+    fileWatcher.dispose();
+    fileWatcher = null;
+  }
 
   const config = getConfig();
   if (!config.autoCommit || !repoRoot) {
@@ -126,8 +134,10 @@ function setupFileWatcher(context) {
   watcher.onDidChange(onFileChange);
   watcher.onDidDelete(onFileChange);
 
-  context.subscriptions.push(watcher);
   fileWatcher = watcher;
+  // Note: We don't push to context.subscriptions here because we manage it manually 
+  // via fileWatcher.dispose() above. pushing to context.subscriptions is for 
+  // objects that live for the whole extension lifecycle.
 }
 
 function shouldExclude(relPath, patterns) {
@@ -315,11 +325,13 @@ function updateStatusBar() {
   } else if (hasChanges) {
     state = 'dirty';
     // Subtle breathing pulse for the rocket
+    // Note: Rocket doesn't support ~spin, we use sync~spin for animations
     const isLit = (animationTick % 4 === 1 || animationTick % 4 === 2);
-    icon = isLit ? '$(rocket)' : '$(rocket~spin)';
-    const changeCount = gitOps.getChangeSummary(repoRoot).files.length;
+    icon = isLit ? '$(rocket)' : '$(sync~spin)'; // Use sync icon to show activity
+    const summary = gitOps.getChangeSummary(repoRoot);
+    const changeCount = summary.files.length;
     text = `GitPilot: ${changeCount} change${changeCount > 1 ? 's' : ''}`;
-    tooltip = `${changeCount} uncommitted files. Auto-commit active.`;
+    tooltip = `${changeCount} files modified. Click to commit.`;
   }
 
   // Handle errors (simplified for this context, could be expanded)
@@ -369,10 +381,16 @@ function handleWebviewMessage(message) {
       runUndo();
       break;
     case 'toggleAutoCommit':
-      vscode.workspace.getConfiguration('gitpilot').update('autoCommit', Boolean(message.value), true);
-      break;
     case 'toggleAutoPush':
-      vscode.workspace.getConfiguration('gitpilot').update('autoPush', Boolean(message.value), true);
+    case 'updateSetting':
+      if (message.key) {
+        const config = vscode.workspace.getConfiguration('gitpilot');
+        config.update(message.key, message.value, true).then(() => {
+          log(`Setting updated: ${message.key} = ${message.value}`);
+          toast(`Setting updated: ${message.key}`);
+          // setupFileWatcher and sendPanelState are triggered by onDidChangeConfiguration
+        });
+      }
       break;
     case 'setStyle':
       vscode.workspace.getConfiguration('gitpilot').update('commitStyle', message.value, true);

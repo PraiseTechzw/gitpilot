@@ -399,10 +399,13 @@
       vscode.postMessage({ type: 'commit', andPush: push, message: msg });
     },
     updateSetting: (key, value) => {
+      currentState[key] = value;
       vscode.postMessage({ type: 'updateSetting', key, value });
     },
     toggleSetting: (key) => {
       const val = !currentState[key];
+      currentState[key] = val;
+      render(currentState); // Immediate UI update
       vscode.postMessage({ type: 'updateSetting', key, value: val });
     },
     checkout: (name) => {

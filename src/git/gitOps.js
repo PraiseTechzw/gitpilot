@@ -6,12 +6,15 @@ function handleError(error) {
 
   if (message.includes('could not read username') || message.includes('no such device or address')) {
     throw new Error(
-      'Authentication failed. GitPilot cannot prompt for credentials in the background.\n\n' +
-      'To fix this, please:\n' +
-      '1. Use SSH instead of HTTPS for your remote URL.\n' +
-      '2. OR configure a credential helper: git config --global credential.helper cache\n' +
-      '3. OR (CLI only) run: gitpilot push'
+      'GitHub authentication failed. GitPilot cannot push in the background without saved credentials.\n\n' +
+      'To fix this, please run one of these in your terminal:\n' +
+      '1. git config --global credential.helper cache\n' +
+      '2. OR use SSH: git remote set-url origin git@github.com:USERNAME/REPO.git'
     );
+  }
+
+  if (message.includes('permission denied') || message.includes('403')) {
+    throw new Error('Push denied. Check your personal access token (PAT) or SSH key permissions.');
   }
 
   throw new Error(stderr || error.message);
